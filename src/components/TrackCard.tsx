@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Play, Pause, Heart, Plus, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface Track {
+export interface Track {
   id: string;
   title: string;
   artist: string;
@@ -15,6 +15,7 @@ interface Track {
   isLiked?: boolean;
   uniqueListeners?: number;
   popularityTier?: 'emerging' | 'rising' | 'established' | 'popular';
+  stream_url?: string;
 }
 
 interface TrackCardProps {

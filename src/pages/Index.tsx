@@ -1,13 +1,18 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { MusicPlayer } from "@/components/MusicPlayer";
 import { DiscoveryShelf } from "@/components/DiscoveryShelf";
 import { SearchBar } from "@/components/SearchBar";
-import { TrackCard } from "@/components/TrackCard";
+import { TrackCard, Track } from "@/components/TrackCard";
+import AudioPlayer from "@/components/AudioPlayer";
+import UploadTrack from "@/components/UploadTrack";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 import { useTracks, useTracksByTier } from "@/hooks/useTracks";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   Upload, 
   TrendingUp, 
@@ -16,7 +21,9 @@ import {
   Clock,
   Heart,
   Users,
-  Music
+  Music,
+  LogOut,
+  LogIn
 } from "lucide-react";
 
 interface SearchFilters {
@@ -28,25 +35,16 @@ interface SearchFilters {
   popularityTier: string[];
 }
 
-interface Track {
-  id: string;
-  title: string;
-  artist: string;
-  duration?: string;
-  coverUrl: string;
-  tags?: string[];
-  isLiked?: boolean;
-  uniqueListeners?: number;
-  popularityTier?: 'emerging' | 'rising' | 'established' | 'popular';
-}
 
 const Index = () => {
+  const { user, loading, signOut } = useAuth();
   const { toast } = useToast();
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(45);
   const [volume, setVolume] = useState(75);
   const [searchValue, setSearchValue] = useState("");
+  const [uploadSheetOpen, setUploadSheetOpen] = useState(false);
   const [filters, setFilters] = useState<SearchFilters>({
     moods: [],
     genres: [],
@@ -58,7 +56,7 @@ const Index = () => {
 
   // Fetch tracks with current filters
   const hasActiveFilters = searchValue || filters.moods.length || filters.genres.length || filters.scenes.length || filters.popularityTier.length;
-  const { tracks: filteredTracks, loading } = useTracks(hasActiveFilters ? filters : undefined);
+  const { tracks: filteredTracks, loading: tracksLoading } = useTracks(hasActiveFilters ? filters : undefined);
   
   // Fetch tracks by tier for discovery shelves
   const { tracks: emergingTracks } = useTracksByTier('emerging');
@@ -98,6 +96,22 @@ const Index = () => {
     }
   };
 
+  const handleUploadComplete = () => {
+    setUploadSheetOpen(false);
+    // Refresh tracks if needed
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Music className="h-12 w-12 animate-pulse mx-auto text-primary" />
+          <p>Loading SoundScape...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-subtle">
       {/* Header */}
@@ -119,16 +133,52 @@ const Index = () => {
             </nav>
 
             <div className="flex items-center gap-3">
-              <Button 
-                variant="outline" 
-                className="gap-2 focus-ring border-primary/20 hover:bg-primary/10"
-              >
-                <Upload className="w-4 h-4" />
-                Upload
-              </Button>
-              <Button className="focus-ring gradient-primary text-white border-0">
-                Join Community
-              </Button>
+              {user ? (
+                <>
+                  <Sheet open={uploadSheetOpen} onOpenChange={setUploadSheetOpen}>
+                    <SheetTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className="gap-2 focus-ring border-primary/20 hover:bg-primary/10"
+                      >
+                        <Upload className="w-4 h-4" />
+                        Upload
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+                      <SheetHeader>
+                        <SheetTitle>Upload Your Track</SheetTitle>
+                        <SheetDescription>
+                          Share your music with the SoundScape community
+                        </SheetDescription>
+                      </SheetHeader>
+                      <div className="mt-6">
+                        <UploadTrack onUploadComplete={handleUploadComplete} />
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                  <Button 
+                    variant="ghost" 
+                    onClick={signOut}
+                    className="focus-ring"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button asChild variant="outline" className="gap-2 focus-ring border-primary/20 hover:bg-primary/10">
+                    <Link to="/auth">
+                      <LogIn className="w-4 h-4" />
+                      Sign In
+                    </Link>
+                  </Button>
+                  <Button asChild className="focus-ring gradient-primary text-white border-0">
+                    <Link to="/auth">Join Community</Link>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -188,7 +238,7 @@ const Index = () => {
               <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
                 Search Results
               </h2>
-              {loading ? (
+              {tracksLoading ? (
                 <div className="text-center py-8 text-muted-foreground">Loading tracks...</div>
               ) : filteredTracks.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -325,6 +375,12 @@ const Index = () => {
           onShowQueue={() => console.log("Show queue")}
         />
       )}
+
+      {/* New Audio Player */}
+      <AudioPlayer 
+        track={currentTrack}
+        onPlay={handlePlay}
+      />
     </div>
   );
 };
