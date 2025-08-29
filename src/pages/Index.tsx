@@ -2,9 +2,12 @@ import { useState } from "react";
 import { MusicPlayer } from "@/components/MusicPlayer";
 import { DiscoveryShelf } from "@/components/DiscoveryShelf";
 import { SearchBar } from "@/components/SearchBar";
+import { TrackCard } from "@/components/TrackCard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { useTracks, useTracksByTier } from "@/hooks/useTracks";
 import { 
   Upload, 
   TrendingUp, 
@@ -15,111 +18,84 @@ import {
   Users,
   Music
 } from "lucide-react";
-import sampleCover1 from "@/assets/sample-cover-1.jpg";
-import sampleCover2 from "@/assets/sample-cover-2.jpg";
-import sampleCover3 from "@/assets/sample-cover-3.jpg";
-
-// Sample data - this would come from your backend
-const SAMPLE_TRACKS = [
-  {
-    id: "1",
-    title: "Neon Dreams",
-    artist: "Cosmic Wanderer",
-    duration: "3:24",
-    coverUrl: sampleCover1,
-    tags: ["Electronic", "Dreamy", "Chill"],
-    isLiked: true
-  },
-  {
-    id: "2",
-    title: "Mountain Folk",
-    artist: "River Valley",
-    duration: "4:12",
-    coverUrl: sampleCover2,
-    tags: ["Folk", "Acoustic", "Peaceful"],
-    isLiked: false
-  },
-  {
-    id: "3",
-    title: "Urban Pulse",
-    artist: "Street Lights",
-    duration: "2:58",
-    coverUrl: sampleCover3,
-    tags: ["Indie Rock", "Energetic", "Urban"],
-    isLiked: false
-  },
-  {
-    id: "4",
-    title: "Midnight Thoughts",
-    artist: "Luna Echo",
-    duration: "5:31",
-    coverUrl: sampleCover1,
-    tags: ["Ambient", "Dark", "Melancholic"],
-    isLiked: true
-  },
-  {
-    id: "5",
-    title: "Coffee Shop Jazz",
-    artist: "The Warm Collective",
-    duration: "3:45",
-    coverUrl: sampleCover2,
-    tags: ["Jazz", "Lo-Fi", "Chill"],
-    isLiked: false
-  }
-];
-
-const FRESH_TRACKS = SAMPLE_TRACKS.slice(0, 3);
-const MOOD_TRACKS = SAMPLE_TRACKS.slice(1, 4);
-const SURPRISE_TRACKS = SAMPLE_TRACKS.slice(2, 5);
 
 interface SearchFilters {
   moods: string[];
   genres: string[];
-  bpmRange: [number, number];
-  duration: 'any' | 'short' | 'medium' | 'long';
   scenes: string[];
+  bpmRange: [number, number];
+  duration: string;
+  popularityTier: string[];
+}
+
+interface Track {
+  id: string;
+  title: string;
+  artist: string;
+  duration?: string;
+  coverUrl: string;
+  tags?: string[];
+  isLiked?: boolean;
+  uniqueListeners?: number;
+  popularityTier?: 'emerging' | 'rising' | 'established' | 'popular';
 }
 
 const Index = () => {
-  const [currentTrack, setCurrentTrack] = useState({
-    ...SAMPLE_TRACKS[0],
-    duration: 204 // 3:24 in seconds
-  });
+  const { toast } = useToast();
+  const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(45);
   const [volume, setVolume] = useState(75);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchFilters, setSearchFilters] = useState<SearchFilters>({
+  const [searchValue, setSearchValue] = useState("");
+  const [filters, setFilters] = useState<SearchFilters>({
     moods: [],
     genres: [],
-    bpmRange: [60, 180],
-    duration: 'any',
-    scenes: []
+    scenes: [],
+    bpmRange: [60, 180] as [number, number],
+    duration: "",
+    popularityTier: [],
   });
 
-  const handleTrackPlay = (trackId: string) => {
-    const track = SAMPLE_TRACKS.find(t => t.id === trackId);
-    if (track) {
-      // Convert duration string to seconds for player
-      const durationParts = track.duration.split(':');
-      const durationInSeconds = parseInt(durationParts[0]) * 60 + parseInt(durationParts[1]);
-      
-      setCurrentTrack({
-        ...track,
-        duration: durationInSeconds
-      });
-      setIsPlaying(true);
-    }
+  // Fetch tracks with current filters
+  const hasActiveFilters = searchValue || filters.moods.length || filters.genres.length || filters.scenes.length || filters.popularityTier.length;
+  const { tracks: filteredTracks, loading } = useTracks(hasActiveFilters ? filters : undefined);
+  
+  // Fetch tracks by tier for discovery shelves
+  const { tracks: emergingTracks } = useTracksByTier('emerging');
+  const { tracks: risingTracks } = useTracksByTier('rising');
+  const { tracks: establishedTracks } = useTracksByTier('established');
+  const { tracks: popularTracks } = useTracksByTier('popular');
+
+  const handlePlay = (track: Track) => {
+    setCurrentTrack(track);
+    setIsPlaying(true);
+    toast({
+      title: "Now Playing",
+      description: `${track.title} by ${track.artist}`,
+    });
   };
 
-  const handleTrackLike = (trackId: string) => {
+  const handleLike = (trackId: string) => {
     // This would update the backend
-    console.log("Liked track:", trackId);
+    toast({
+      title: "Added to Favorites",
+      description: "Track has been liked!",
+    });
   };
 
-  const handleTrackQueue = (trackId: string) => {
+  const handleAddToQueue = (trackId: string) => {
     // This would add to queue
-    console.log("Added to queue:", trackId);
+    toast({
+      title: "Added to Queue",
+      description: "Track has been added to your queue!",
+    });
+  };
+
+  const handleSearch = (query: string, searchFilters?: SearchFilters) => {
+    setSearchValue(query);
+    if (searchFilters) {
+      setFilters(searchFilters);
+    }
   };
 
   return (
@@ -178,10 +154,11 @@ const Index = () => {
           {/* Search */}
           <div className="max-w-2xl mx-auto pt-6">
             <SearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              filters={searchFilters}
-              onFiltersChange={setSearchFilters}
+              value={searchValue}
+              onChange={setSearchValue}
+              filters={filters}
+              onFiltersChange={setFilters}
+              onSearch={handleSearch}
               placeholder="Find your next favorite track..."
             />
           </div>
@@ -203,36 +180,75 @@ const Index = () => {
           ))}
         </section>
 
-        {/* Discovery Shelves */}
-        <DiscoveryShelf
-          title="Fresh Finds"
-          description="New releases guaranteed fair exposure"
-          tracks={FRESH_TRACKS}
-          currentPlayingId={isPlaying ? currentTrack.id : undefined}
-          onTrackPlay={handleTrackPlay}
-          onTrackLike={handleTrackLike}
-          onTrackQueue={handleTrackQueue}
-        />
-
-        <DiscoveryShelf
-          title="Mood: Chill Vibes"
-          description="Perfect for your evening unwind"
-          tracks={MOOD_TRACKS}
-          currentPlayingId={isPlaying ? currentTrack.id : undefined}
-          onTrackPlay={handleTrackPlay}
-          onTrackLike={handleTrackLike}
-          onTrackQueue={handleTrackQueue}
-        />
-
-        <DiscoveryShelf
-          title="Surprise Me"
-          description="Algorithmic serendipity from emerging scenes"
-          tracks={SURPRISE_TRACKS}
-          currentPlayingId={isPlaying ? currentTrack.id : undefined}
-          onTrackPlay={handleTrackPlay}
-          onTrackLike={handleTrackLike}
-          onTrackQueue={handleTrackQueue}
-        />
+        {/* Discovery Shelves - Show filtered results or tier-based discovery */}
+        <div className="space-y-8">
+          {hasActiveFilters ? (
+            // Show filtered results
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+                Search Results
+              </h2>
+              {loading ? (
+                <div className="text-center py-8 text-muted-foreground">Loading tracks...</div>
+              ) : filteredTracks.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  {filteredTracks.slice(0, 20).map((track) => (
+                    <TrackCard
+                      key={track.id}
+                      track={track}
+                      onPlay={handlePlay}
+                      onLike={handleLike}
+                      onAddToQueue={handleAddToQueue}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No tracks found matching your criteria
+                </div>
+              )}
+            </div>
+          ) : (
+            // Show discovery shelves by tier
+            <>
+              <DiscoveryShelf
+                title="🌱 Support Emerging Artists"
+                description="Discover new talent with under 100 listeners"
+                tracks={emergingTracks.slice(0, 8)}
+                onPlay={handlePlay}
+                onLike={handleLike}
+                onAddToQueue={handleAddToQueue}
+              />
+              
+              <DiscoveryShelf
+                title="📈 Rising Stars"
+                description="Growing artists worth following (100-999 listeners)"
+                tracks={risingTracks.slice(0, 8)}
+                onPlay={handlePlay}
+                onLike={handleLike}
+                onAddToQueue={handleAddToQueue}
+              />
+              
+              <DiscoveryShelf
+                title="🎯 Established Favorites"
+                description="Proven quality with growing following (1K-9K listeners)"
+                tracks={establishedTracks.slice(0, 8)}
+                onPlay={handlePlay}
+                onLike={handleLike}
+                onAddToQueue={handleAddToQueue}
+              />
+              
+              <DiscoveryShelf
+                title="🔥 Popular Hits"
+                description="Indie favorites loved by thousands (10K+ listeners)"
+                tracks={popularTracks.slice(0, 8)}
+                onPlay={handlePlay}
+                onLike={handleLike}
+                onAddToQueue={handleAddToQueue}
+              />
+            </>
+          )}
+        </div>
 
         {/* Scene Highlights */}
         <section className="space-y-6">
@@ -288,19 +304,27 @@ const Index = () => {
       </main>
 
       {/* Music Player */}
-      <MusicPlayer
-        currentTrack={currentTrack}
-        isPlaying={isPlaying}
-        currentTime={currentTime}
-        volume={volume}
-        onPlayPause={() => setIsPlaying(!isPlaying)}
-        onNext={() => console.log("Next track")}
-        onPrevious={() => console.log("Previous track")}
-        onSeek={(time) => setCurrentTime(time)}
-        onVolumeChange={(vol) => setVolume(vol)}
-        onToggleLike={() => console.log("Toggle like")}
-        onShowQueue={() => console.log("Show queue")}
-      />
+      {currentTrack && (
+        <MusicPlayer
+          currentTrack={{
+            id: currentTrack.id,
+            title: currentTrack.title,
+            artist: currentTrack.artist,
+            coverUrl: currentTrack.coverUrl,
+            duration: 204 // TODO: Get actual duration from track
+          }}
+          isPlaying={isPlaying}
+          currentTime={currentTime}
+          volume={volume}
+          onPlayPause={() => setIsPlaying(!isPlaying)}
+          onNext={() => console.log("Next track")}
+          onPrevious={() => console.log("Previous track")}
+          onSeek={(time) => setCurrentTime(time)}
+          onVolumeChange={(vol) => setVolume(vol)}
+          onToggleLike={() => handleLike(currentTrack.id)}
+          onShowQueue={() => console.log("Show queue")}
+        />
+      )}
     </div>
   );
 };

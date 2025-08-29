@@ -8,20 +8,21 @@ interface Track {
   id: string;
   title: string;
   artist: string;
-  duration: string;
+  duration?: string;
   coverUrl: string;
-  tags: string[];
+  tags?: string[];
   isLiked?: boolean;
+  uniqueListeners?: number;
+  popularityTier?: 'emerging' | 'rising' | 'established' | 'popular';
 }
 
 interface DiscoveryShelfProps {
   title: string;
   description?: string;
   tracks: Track[];
-  currentPlayingId?: string;
-  onTrackPlay?: (trackId: string) => void;
-  onTrackLike?: (trackId: string) => void;
-  onTrackQueue?: (trackId: string) => void;
+  onPlay?: (track: Track) => void;
+  onLike?: (trackId: string) => void;
+  onAddToQueue?: (trackId: string) => void;
   className?: string;
 }
 
@@ -29,10 +30,9 @@ export function DiscoveryShelf({
   title,
   description,
   tracks,
-  currentPlayingId,
-  onTrackPlay,
-  onTrackLike,
-  onTrackQueue,
+  onPlay,
+  onLike,
+  onAddToQueue,
   className
 }: DiscoveryShelfProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -94,10 +94,9 @@ export function DiscoveryShelf({
           <div key={track.id} className="flex-shrink-0 w-[280px]">
             <TrackCard
               track={track}
-              isPlaying={currentPlayingId === track.id}
-              onPlay={onTrackPlay}
-              onLike={onTrackLike}
-              onAddToQueue={onTrackQueue}
+              onPlay={onPlay}
+              onLike={onLike}
+              onAddToQueue={onAddToQueue}
             />
           </div>
         ))}

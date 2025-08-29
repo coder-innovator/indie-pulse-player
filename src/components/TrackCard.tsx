@@ -9,16 +9,18 @@ interface Track {
   id: string;
   title: string;
   artist: string;
-  duration: string;
+  duration?: string;
   coverUrl: string;
-  tags: string[];
+  tags?: string[];
   isLiked?: boolean;
+  uniqueListeners?: number;
+  popularityTier?: 'emerging' | 'rising' | 'established' | 'popular';
 }
 
 interface TrackCardProps {
   track: Track;
   isPlaying?: boolean;
-  onPlay?: (trackId: string) => void;
+  onPlay?: (track: Track) => void;
   onLike?: (trackId: string) => void;
   onAddToQueue?: (trackId: string) => void;
   className?: string;
@@ -35,6 +37,31 @@ export function TrackCard({
   const [isHovered, setIsHovered] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
 
+  const getPopularityBadge = (tier?: string, listeners?: number) => {
+    if (!tier) return null;
+    
+    const badges = {
+      emerging: { emoji: "🌱", label: "Emerging", color: "bg-green-500/20 text-green-400" },
+      rising: { emoji: "📈", label: "Rising", color: "bg-blue-500/20 text-blue-400" },
+      established: { emoji: "🎯", label: "Established", color: "bg-orange-500/20 text-orange-400" },
+      popular: { emoji: "🔥", label: "Popular", color: "bg-red-500/20 text-red-400" }
+    };
+    
+    const badge = badges[tier as keyof typeof badges];
+    if (!badge) return null;
+    
+    return (
+      <div className={cn("absolute top-2 left-2 px-2 py-1 rounded-full text-xs font-medium backdrop-blur-sm", badge.color)}>
+        {badge.emoji} {badge.label}
+        {listeners && (
+          <span className="ml-1 opacity-75">
+            {listeners < 1000 ? listeners : `${(listeners / 1000).toFixed(1)}K`}
+          </span>
+        )}
+      </div>
+    );
+  };
+
   return (
     <Card 
       className={cn(
@@ -44,7 +71,7 @@ export function TrackCard({
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={() => onPlay?.(track.id)}
+      onClick={() => onPlay?.(track)}
     >
       <div className="relative">
         {/* Album Cover */}
@@ -59,6 +86,9 @@ export function TrackCard({
             )}
             onLoad={() => setImageLoaded(true)}
           />
+          
+          {/* Popularity badge */}
+          {getPopularityBadge(track.popularityTier, track.uniqueListeners)}
           
           {/* Play Button Overlay */}
           <div 
@@ -75,7 +105,7 @@ export function TrackCard({
               )}
               onClick={(e) => {
                 e.stopPropagation();
-                onPlay?.(track.id);
+                onPlay?.(track);
               }}
               aria-label={isPlaying ? `Pause ${track.title}` : `Play ${track.title}`}
             >
@@ -100,22 +130,24 @@ export function TrackCard({
           </div>
 
           {/* Tags */}
-          <div className="flex flex-wrap gap-1">
-            {track.tags.slice(0, 2).map((tag) => (
-              <Badge 
-                key={tag} 
-                variant="secondary"
-                className="text-xs px-2 py-0.5 bg-secondary/50 hover:bg-secondary/80 transition-colors"
-              >
-                {tag}
-              </Badge>
-            ))}
-            {track.tags.length > 2 && (
-              <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-secondary/50">
-                +{track.tags.length - 2}
-              </Badge>
-            )}
-          </div>
+          {track.tags && track.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {track.tags.slice(0, 2).map((tag) => (
+                <Badge 
+                  key={tag} 
+                  variant="secondary"
+                  className="text-xs px-2 py-0.5 bg-secondary/50 hover:bg-secondary/80 transition-colors"
+                >
+                  {tag}
+                </Badge>
+              ))}
+              {track.tags.length > 2 && (
+                <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-secondary/50">
+                  +{track.tags.length - 2}
+                </Badge>
+              )}
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div 
@@ -156,7 +188,9 @@ export function TrackCard({
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">{track.duration}</span>
+              {track.duration && (
+                <span className="text-xs text-muted-foreground">{track.duration}</span>
+              )}
               <Button
                 size="icon"
                 variant="ghost"

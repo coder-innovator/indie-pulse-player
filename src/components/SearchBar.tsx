@@ -22,9 +22,10 @@ import { cn } from "@/lib/utils";
 interface SearchFilters {
   moods: string[];
   genres: string[];
-  bpmRange: [number, number];
-  duration: 'any' | 'short' | 'medium' | 'long';
   scenes: string[];
+  bpmRange: [number, number];
+  duration: string;
+  popularityTier: string[];
 }
 
 interface SearchBarProps {
@@ -48,8 +49,14 @@ const GENRE_OPTIONS = [
 ];
 
 const SCENE_OPTIONS = [
-  'Brooklyn', 'Berlin', 'London', 'LA', 'Nashville', 'Montreal',
-  'Portland', 'Austin', 'Melbourne', 'São Paulo'
+  'Underground', 'Local', 'Experimental', 'Bedroom Pop', 'Lo-fi', 'DIY'
+];
+
+const POPULARITY_TIER_OPTIONS = [
+  { value: "emerging", label: "🌱 Emerging (0-99 listeners)", description: "Support new artists" },
+  { value: "rising", label: "📈 Rising (100-999 listeners)", description: "Rising talent" },
+  { value: "established", label: "🎯 Established (1K-9K listeners)", description: "Growing following" },
+  { value: "popular", label: "🔥 Popular (10K+ listeners)", description: "Proven hits" }
 ];
 
 export function SearchBar({
@@ -63,17 +70,41 @@ export function SearchBar({
 }: SearchBarProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [searchType, setSearchType] = useState<'all' | 'tracks' | 'artists' | 'tags'>('all');
+  
+  const [localFilters, setLocalFilters] = useState<SearchFilters>({
+    moods: [],
+    genres: [],
+    scenes: [],
+    bpmRange: [60, 180],
+    duration: "",
+    popularityTier: [],
+  });
 
-  const hasActiveFilters = filters && (
-    filters.moods.length > 0 ||
-    filters.genres.length > 0 ||
-    filters.scenes.length > 0 ||
-    filters.duration !== 'any' ||
-    filters.bpmRange[0] > 60 || filters.bpmRange[1] < 180
-  );
+  // Use filters prop or local state
+  const currentFilters = filters || localFilters;
+  const setCurrentFilters = onFiltersChange || setLocalFilters;
+
+  const clearAllFilters = () => {
+    const clearedFilters = {
+      moods: [],
+      genres: [],
+      scenes: [],
+      bpmRange: [60, 180] as [number, number],
+      duration: "",
+      popularityTier: [],
+    };
+    setLocalFilters(clearedFilters);
+    onFiltersChange?.(clearedFilters);
+  };
+
+  const activeFilterCount = currentFilters.moods.length + 
+    currentFilters.genres.length + 
+    currentFilters.scenes.length + 
+    currentFilters.popularityTier.length +
+    (currentFilters.duration ? 1 : 0);
 
   const handleSearch = () => {
-    onSearch?.(value, filters);
+    onSearch?.(value, currentFilters);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -82,31 +113,21 @@ export function SearchBar({
     }
   };
 
-  const clearFilters = () => {
-    onFiltersChange?.({
-      moods: [],
-      genres: [],
-      bpmRange: [60, 180],
-      duration: 'any',
-      scenes: []
-    });
-  };
-
   const toggleArrayFilter = (
-    filterKey: 'moods' | 'genres' | 'scenes',
+    filterKey: 'moods' | 'genres' | 'scenes' | 'popularityTier',
     value: string
   ) => {
-    if (!filters || !onFiltersChange) return;
-    
-    const currentArray = filters[filterKey];
+    const currentArray = currentFilters[filterKey];
     const newArray = currentArray.includes(value)
       ? currentArray.filter(item => item !== value)
       : [...currentArray, value];
     
-    onFiltersChange({
-      ...filters,
+    const newFilters = {
+      ...currentFilters,
       [filterKey]: newArray
-    });
+    };
+    setLocalFilters(newFilters);
+    onFiltersChange?.(newFilters);
   };
 
   return (
@@ -151,12 +172,12 @@ export function SearchBar({
                   size="icon"
                   className={cn(
                     "w-8 h-8 focus-ring",
-                    hasActiveFilters && "text-primary hover:text-primary"
+                    activeFilterCount > 0 && "text-primary hover:text-primary"
                   )}
                   aria-label="Open filters"
                 >
                   <Filter className="w-4 h-4" />
-                  {hasActiveFilters && (
+                  {activeFilterCount > 0 && (
                     <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" />
                   )}
                 </Button>
@@ -165,17 +186,47 @@ export function SearchBar({
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold text-foreground">Filters</h3>
-                    {hasActiveFilters && (
+                    {activeFilterCount > 0 && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={clearFilters}
+                        onClick={clearAllFilters}
                         className="h-7 px-2 text-xs"
                       >
                         Clear all
                       </Button>
                     )}
                   </div>
+
+                  <div>
+                    <h4 className="text-sm font-medium mb-2 text-foreground">Discovery Level</h4>
+                    <div className="space-y-2">
+                      {POPULARITY_TIER_OPTIONS.map((tier) => (
+                        <button
+                          key={tier.value}
+                          onClick={() => {
+                            const newTiers = currentFilters.popularityTier.includes(tier.value)
+                              ? currentFilters.popularityTier.filter(t => t !== tier.value)
+                              : [...currentFilters.popularityTier, tier.value];
+                            const newFilters = { ...currentFilters, popularityTier: newTiers };
+                            setLocalFilters(newFilters);
+                            onFiltersChange?.(newFilters);
+                          }}
+                          className={cn(
+                            "w-full p-3 rounded-lg text-left transition-all border",
+                            currentFilters.popularityTier.includes(tier.value)
+                              ? "bg-primary/20 border-primary text-primary"
+                              : "bg-card/50 border-card text-foreground hover:bg-card"
+                          )}
+                        >
+                          <div className="font-medium text-sm">{tier.label}</div>
+                          <div className="text-xs opacity-70">{tier.description}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <Separator />
 
                   {/* Moods */}
                   <div>
@@ -186,7 +237,7 @@ export function SearchBar({
                       {MOOD_OPTIONS.map((mood) => (
                         <Badge
                           key={mood}
-                          variant={filters?.moods.includes(mood) ? "default" : "secondary"}
+                          variant={currentFilters.moods.includes(mood) ? "default" : "secondary"}
                           className="cursor-pointer hover:bg-primary/20 transition-colors text-xs"
                           onClick={() => toggleArrayFilter('moods', mood)}
                         >
@@ -207,7 +258,7 @@ export function SearchBar({
                       {GENRE_OPTIONS.map((genre) => (
                         <Badge
                           key={genre}
-                          variant={filters?.genres.includes(genre) ? "default" : "secondary"}
+                          variant={currentFilters.genres.includes(genre) ? "default" : "secondary"}
                           className="cursor-pointer hover:bg-primary/20 transition-colors text-xs"
                           onClick={() => toggleArrayFilter('genres', genre)}
                         >
@@ -228,7 +279,7 @@ export function SearchBar({
                       {SCENE_OPTIONS.map((scene) => (
                         <Badge
                           key={scene}
-                          variant={filters?.scenes.includes(scene) ? "default" : "secondary"}
+                          variant={currentFilters.scenes.includes(scene) ? "default" : "secondary"}
                           className="cursor-pointer hover:bg-primary/20 transition-colors text-xs"
                           onClick={() => toggleArrayFilter('scenes', scene)}
                         >
@@ -255,51 +306,75 @@ export function SearchBar({
       </div>
 
       {/* Active Filters Display */}
-      {hasActiveFilters && (
-        <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-xs text-muted-foreground">Active filters:</span>
-          
-          {filters?.moods.map((mood) => (
+      {activeFilterCount > 0 && (
+        <div className="flex flex-wrap gap-2 mt-3">
+          {currentFilters.popularityTier.map((tier) => {
+            const tierInfo = POPULARITY_TIER_OPTIONS.find(t => t.value === tier);
+            return (
+              <Badge key={tier} variant="secondary" className="text-xs">
+                {tierInfo?.label || tier}
+                <button
+                  onClick={() => {
+                    const newTiers = currentFilters.popularityTier.filter(t => t !== tier);
+                    const newFilters = { ...currentFilters, popularityTier: newTiers };
+                    setLocalFilters(newFilters);
+                    onFiltersChange?.(newFilters);
+                  }}
+                  className="ml-1 hover:text-destructive"
+                >
+                  ×
+                </button>
+              </Badge>
+            );
+          })}
+          {currentFilters.moods.map((mood) => (
             <Badge key={mood} variant="secondary" className="text-xs">
               {mood}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="w-3 h-3 ml-1 p-0 hover:bg-transparent"
+              <button
                 onClick={() => toggleArrayFilter('moods', mood)}
+                className="ml-1 hover:text-destructive"
               >
-                <X className="w-2 h-2" />
-              </Button>
+                ×
+              </button>
             </Badge>
           ))}
-          
-          {filters?.genres.map((genre) => (
+          {currentFilters.genres.map((genre) => (
             <Badge key={genre} variant="secondary" className="text-xs">
               {genre}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="w-3 h-3 ml-1 p-0 hover:bg-transparent"
+              <button
                 onClick={() => toggleArrayFilter('genres', genre)}
+                className="ml-1 hover:text-destructive"
               >
-                <X className="w-2 h-2" />
-              </Button>
+                ×
+              </button>
             </Badge>
           ))}
-          
-          {filters?.scenes.map((scene) => (
+          {currentFilters.scenes.map((scene) => (
             <Badge key={scene} variant="secondary" className="text-xs">
               {scene}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="w-3 h-3 ml-1 p-0 hover:bg-transparent"
+              <button
                 onClick={() => toggleArrayFilter('scenes', scene)}
+                className="ml-1 hover:text-destructive"
               >
-                <X className="w-2 h-2" />
-              </Button>
+                ×
+              </button>
             </Badge>
           ))}
+          {currentFilters.duration && (
+            <Badge variant="secondary" className="text-xs">
+              {currentFilters.duration}
+              <button
+                onClick={() => {
+                  const newFilters = { ...currentFilters, duration: "" };
+                  setLocalFilters(newFilters);
+                  onFiltersChange?.(newFilters);
+                }}
+                className="ml-1 hover:text-destructive"
+              >
+                ×
+              </button>
+            </Badge>
+          )}
         </div>
       )}
     </div>
