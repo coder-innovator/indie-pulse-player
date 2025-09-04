@@ -28,6 +28,7 @@ interface SearchFilters {
 const SearchResults = () => {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<SearchFilters>({
     moods: [],
     genres: [],
@@ -111,7 +112,7 @@ const SearchResults = () => {
 
       {/* Search and Filters */}
       <div className="mb-8">
-        <SearchBar onSearch={handleSearch} />
+        <SearchBar value={searchQuery} onChange={setSearchQuery} onSearch={handleSearch} />
         
         {/* Active Filters Display */}
         {getFilterCount() > 0 && (

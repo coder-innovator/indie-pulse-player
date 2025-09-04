@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  Upload, 
+  Upload as UploadIcon, 
   Music, 
   Image, 
   FileAudio,
@@ -392,7 +392,7 @@ const Upload = () => {
           <div className="mb-8 text-center">
             <div className="flex items-center justify-center gap-3 mb-4">
               <div className="p-3 bg-primary/20 rounded-lg border border-primary/30">
-                <Upload className="w-8 h-8 text-primary" />
+                <UploadIcon className="w-8 h-8 text-primary" />
               </div>
               <h1 className="text-4xl font-bold text-gradient">Upload Your Track</h1>
             </div>
@@ -688,10 +688,10 @@ const Upload = () => {
               </div>
 
               <div className="flex justify-between mt-8">
-                <GlowButton variant="outline" onClick={prevStep} className="px-6 py-3 border-border-medium text-foreground hover:bg-surface-secondary">
+                <Button variant="outline" onClick={prevStep} className="px-6 py-3 border-border-medium text-foreground hover:bg-surface-secondary">
                   <ArrowLeft className="w-5 h-5 mr-2" />
                   Back
-                </GlowButton>
+                </Button>
                 <MagicButton onClick={nextStep} disabled={!formData.title || !formData.mood || !formData.genre || !formData.scene} className="px-8 py-3">
                   Next: Review
                   <ArrowRight className="w-5 h-5 ml-2" />
@@ -765,10 +765,10 @@ const Upload = () => {
               </div>
 
               <div className="flex justify-between mt-8">
-                <GlowButton variant="outline" onClick={prevStep} className="px-6 py-3 border-border-medium text-foreground hover:bg-surface-secondary">
+                <Button variant="outline" onClick={prevStep} className="px-6 py-3 border-border-medium text-foreground hover:bg-surface-secondary">
                   <ArrowLeft className="w-5 h-5 mr-2" />
                   Back
-                </GlowButton>
+                </Button>
                 <MagicButton onClick={handleUpload} disabled={loading} className="px-8 py-3">
                   {loading ? (
                     <>
@@ -777,7 +777,7 @@ const Upload = () => {
                     </>
                   ) : (
                     <>
-                      <Upload className="w-5 h-5 mr-2" />
+                      <UploadIcon className="w-5 h-5 mr-2" />
                       Upload Track
                     </>
                   )}

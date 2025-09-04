@@ -158,7 +158,7 @@ const Profile = () => {
         duration: like.tracks.duration ? `${Math.floor(like.tracks.duration / 60)}:${(like.tracks.duration % 60).toString().padStart(2, '0')}` : undefined,
         coverUrl: like.tracks.cover_url || '/src/assets/sample-cover-1.jpg',
         uniqueListeners: like.tracks.unique_listeners,
-        popularityTier: like.tracks.popularity_tier,
+        popularityTier: (like.tracks.popularity_tier as 'emerging' | 'rising' | 'established' | 'popular') || 'emerging',
         liked_at: like.created_at
       })) || [];
 

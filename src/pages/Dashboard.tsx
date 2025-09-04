@@ -32,6 +32,7 @@ interface ArtistProfile {
   bio?: string;
   links?: any;
   user_id: string;
+  avatar_url?: string;
 }
 
 interface Track {
@@ -298,7 +299,7 @@ export default function Dashboard() {
         <div className="mb-8">
           <div className="flex items-center gap-6 mb-6">
             <Avatar className="w-20 h-20">
-              <AvatarImage src={artistProfile.cover_url} />
+              <AvatarImage src={artistProfile.avatar_url || '/placeholder.svg'} />
               <AvatarFallback className="text-2xl bg-primary/20 text-primary">
                 {artistProfile.name?.charAt(0).toUpperCase()}
               </AvatarFallback>

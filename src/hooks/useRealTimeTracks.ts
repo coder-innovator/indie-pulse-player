@@ -102,7 +102,7 @@ export const useRealTimeTracks = (filters?: any): RealTimeTrackStats => {
           coverUrl: track.cover_url || '/src/assets/sample-cover-1.jpg',
           streamUrl: track.stream_url,
           uniqueListeners: track.unique_listeners || 0,
-          popularityTier: track.popularity_tier || 'emerging',
+          popularityTier: (track.popularity_tier as 'emerging' | 'rising' | 'established' | 'popular') || 'emerging',
           totalPlays: track.total_plays || 0,
           weeklyGrowth,
           bpm: track.bpm,

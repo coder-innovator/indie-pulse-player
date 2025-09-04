@@ -21,8 +21,8 @@ interface TrackData {
   mood: string;
   genre: string;
   scene: string;
-  audioFile: File | null;
-  coverArt: File | null;
+  audioFile?: File | string | null;
+  coverArt?: File | string | null;
 }
 
 const MOOD_OPTIONS = [
@@ -72,7 +72,7 @@ export const UploadTrack = ({ onUploadComplete }: UploadTrackProps) => {
     }
 
     if (step === 2) {
-      if (!trackData.audioFile) newErrors.audioFile = 'Audio file is required';
+      if (!trackData.audioFile) newErrors.audioFile = 'Audio file is required' as string;
     }
 
     setErrors(newErrors);
@@ -124,10 +124,11 @@ export const UploadTrack = ({ onUploadComplete }: UploadTrackProps) => {
       }
 
       // Step 2: Upload audio file
-      const audioFileName = `${user.id}/${Date.now()}_${trackData.audioFile.name}`;
+      const audioFile = trackData.audioFile as File;
+      const audioFileName = `${user.id}/${Date.now()}_${audioFile.name}`;
       const { data: audioData, error: audioError } = await supabase.storage
         .from('audio-files')
-        .upload(audioFileName, trackData.audioFile);
+        .upload(audioFileName, audioFile);
 
       if (audioError) throw audioError;
 
@@ -139,10 +140,11 @@ export const UploadTrack = ({ onUploadComplete }: UploadTrackProps) => {
       // Step 3: Upload cover art if provided
       let coverUrl = '';
       if (trackData.coverArt) {
-        const coverFileName = `${user.id}/${Date.now()}_${trackData.coverArt.name}`;
+        const coverFile = trackData.coverArt as File;
+        const coverFileName = `${user.id}/${Date.now()}_${coverFile.name}`;
         const { data: coverData, error: coverError } = await supabase.storage
           .from('cover-art')
-          .upload(coverFileName, trackData.coverArt);
+          .upload(coverFileName, coverFile);
 
         if (coverError) throw coverError;
         
@@ -365,9 +367,9 @@ export const UploadTrack = ({ onUploadComplete }: UploadTrackProps) => {
                 {trackData.audioFile ? (
                   <div className="space-y-2">
                     <Music className="w-8 h-8 mx-auto text-primary" />
-                    <p className="font-medium">{trackData.audioFile.name}</p>
+                    <p className="font-medium">{(trackData.audioFile as File).name}</p>
                     <p className="text-sm text-muted-foreground">
-                      {(trackData.audioFile.size / 1024 / 1024).toFixed(2)} MB
+                      {((trackData.audioFile as File).size / 1024 / 1024).toFixed(2)} MB
                     </p>
                     <Button
                       variant="outline"
@@ -402,7 +404,7 @@ export const UploadTrack = ({ onUploadComplete }: UploadTrackProps) => {
                   </div>
                 )}
               </div>
-              {errors.audioFile && <p className="text-sm text-red-500">{errors.audioFile}</p>}
+              {errors.audioFile && <p className="text-sm text-red-500">{String(errors.audioFile)}</p>}
             </div>
 
             <div className="space-y-2">
@@ -411,7 +413,7 @@ export const UploadTrack = ({ onUploadComplete }: UploadTrackProps) => {
                 {trackData.coverArt ? (
                   <div className="space-y-2">
                     <Image className="w-8 h-8 mx-auto text-primary" />
-                    <p className="font-medium">{trackData.coverArt.name}</p>
+                    <p className="font-medium">{(trackData.coverArt as File).name}</p>
                     <Button
                       variant="outline"
                       size="sm"
@@ -481,7 +483,7 @@ export const UploadTrack = ({ onUploadComplete }: UploadTrackProps) => {
                 </div>
                 <div>
                   <span className="font-medium">Audio File:</span>
-                  <p className="text-muted-foreground">{trackData.audioFile?.name}</p>
+                  <p className="text-muted-foreground">{(trackData.audioFile as File)?.name}</p>
                 </div>
               </div>
 
