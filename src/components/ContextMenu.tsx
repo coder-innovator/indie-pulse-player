@@ -170,5 +170,339 @@ const TrackContextMenu: React.FC<TrackContextMenuProps> = ({ track, onClose }) =
   }, [track, toast, onClose]);
   
   return (
-    <ContextMenuContent className=\"w-56\">
-      <ContextMenuItem onClick={handlePlay} className=\"gap-2\">\n        {isCurrentTrack && isPlaying ? (\n          <Pause className=\"h-4 w-4\" />\n        ) : (\n          <Play className=\"h-4 w-4\" />\n        )}\n        {isCurrentTrack && isPlaying ? 'Pause' : 'Play'}\n      </ContextMenuItem>\n      \n      <ContextMenuItem onClick={handlePlayNext} className=\"gap-2\">\n        <Plus className=\"h-4 w-4\" />\n        Play next\n      </ContextMenuItem>\n      \n      <ContextMenuItem onClick={handleAddToQueue} className=\"gap-2\">\n        <ListMusic className=\"h-4 w-4\" />\n        Add to queue\n      </ContextMenuItem>\n      \n      <ContextMenuSeparator />\n      \n      <ContextMenuItem onClick={handleLike} className=\"gap-2\">\n        <Heart className=\"h-4 w-4\" />\n        Add to Liked Songs\n      </ContextMenuItem>\n      \n      <ContextMenuSub>\n        <ContextMenuSubTrigger className=\"gap-2\">\n          <Folder className=\"h-4 w-4\" />\n          Add to playlist\n        </ContextMenuSubTrigger>\n        <ContextMenuSubContent className=\"w-48\">\n          <ContextMenuItem>\n            <Plus className=\"h-4 w-4 mr-2\" />\n            Create new playlist\n          </ContextMenuItem>\n          <ContextMenuSeparator />\n          {/* TODO: List user's playlists */}\n          <ContextMenuItem>My Playlist #1</ContextMenuItem>\n          <ContextMenuItem>My Playlist #2</ContextMenuItem>\n        </ContextMenuSubContent>\n      </ContextMenuSub>\n      \n      <ContextMenuSeparator />\n      \n      <ContextMenuItem onClick={handleGoToArtist} className=\"gap-2\">\n        <User className=\"h-4 w-4\" />\n        Go to artist\n      </ContextMenuItem>\n      \n      <ContextMenuSub>\n        <ContextMenuSubTrigger className=\"gap-2\">\n          <Radio className=\"h-4 w-4\" />\n          Go to radio\n        </ContextMenuSubTrigger>\n        <ContextMenuSubContent className=\"w-48\">\n          <ContextMenuItem>\n            <Radio className=\"h-4 w-4 mr-2\" />\n            Song radio\n          </ContextMenuItem>\n          <ContextMenuItem>\n            <User className=\"h-4 w-4 mr-2\" />\n            Artist radio\n          </ContextMenuItem>\n        </ContextMenuSubContent>\n      </ContextMenuSub>\n      \n      <ContextMenuSeparator />\n      \n      <ContextMenuItem onClick={handleShare} className=\"gap-2\">\n        <Share className=\"h-4 w-4\" />\n        Share\n      </ContextMenuItem>\n      \n      <ContextMenuItem onClick={handleCopyLink} className=\"gap-2\">\n        <Copy className=\"h-4 w-4\" />\n        Copy song link\n      </ContextMenuItem>\n      \n      <ContextMenuItem onClick={handleDownload} className=\"gap-2\">\n        <Download className=\"h-4 w-4\" />\n        Download\n      </ContextMenuItem>\n      \n      <ContextMenuSeparator />\n      \n      <ContextMenuItem onClick={handleShowInfo} className=\"gap-2\">\n        <Info className=\"h-4 w-4\" />\n        Show credits\n      </ContextMenuItem>\n    </ContextMenuContent>\n  );\n};\n\nconst ArtistContextMenu: React.FC<ArtistContextMenuProps> = ({ artist, onClose }) => {\n  const navigate = useNavigate();\n  const { toast } = useToast();\n  \n  const handlePlay = useCallback(() => {\n    // TODO: Play artist's top tracks\n    toast({\n      title: 'Playing artist',\n      description: `Playing ${artist.name}'s top tracks`,\n    });\n    onClose?.();\n  }, [artist, toast, onClose]);\n  \n  const handleShuffle = useCallback(() => {\n    // TODO: Shuffle artist's tracks\n    toast({\n      title: 'Shuffling artist',\n      description: `Shuffling ${artist.name}'s tracks`,\n    });\n    onClose?.();\n  }, [artist, toast, onClose]);\n  \n  const handleFollow = useCallback(() => {\n    // TODO: Implement follow functionality\n    toast({\n      title: 'Following artist',\n      description: `Now following ${artist.name}`,\n    });\n    onClose?.();\n  }, [artist, toast, onClose]);\n  \n  const handleGoToArtist = useCallback(() => {\n    navigate(`/artist/${artist.id}`);\n    onClose?.();\n  }, [navigate, artist, onClose]);\n  \n  const handleShare = useCallback(async () => {\n    const shareData = {\n      title: artist.name,\n      text: `Check out ${artist.name} on SoundScape`,\n      url: `${window.location.origin}/artist/${artist.id}`,\n    };\n    \n    try {\n      if (navigator.share) {\n        await navigator.share(shareData);\n      } else {\n        await navigator.clipboard.writeText(shareData.url);\n        toast({\n          title: 'Link copied',\n          description: 'Artist link copied to clipboard',\n        });\n      }\n    } catch (error) {\n      console.error('Share failed:', error);\n    }\n    onClose?.();\n  }, [artist, toast, onClose]);\n  \n  return (\n    <ContextMenuContent className=\"w-56\">\n      <ContextMenuItem onClick={handlePlay} className=\"gap-2\">\n        <Play className=\"h-4 w-4\" />\n        Play\n      </ContextMenuItem>\n      \n      <ContextMenuItem onClick={handleShuffle} className=\"gap-2\">\n        <Radio className=\"h-4 w-4\" />\n        Shuffle\n      </ContextMenuItem>\n      \n      <ContextMenuSeparator />\n      \n      <ContextMenuItem onClick={handleFollow} className=\"gap-2\">\n        <Plus className=\"h-4 w-4\" />\n        Follow\n      </ContextMenuItem>\n      \n      <ContextMenuItem onClick={handleGoToArtist} className=\"gap-2\">\n        <ExternalLink className=\"h-4 w-4\" />\n        Go to artist page\n      </ContextMenuItem>\n      \n      <ContextMenuSub>\n        <ContextMenuSubTrigger className=\"gap-2\">\n          <Radio className=\"h-4 w-4\" />\n          Go to radio\n        </ContextMenuSubTrigger>\n        <ContextMenuSubContent className=\"w-48\">\n          <ContextMenuItem>\n            <Radio className=\"h-4 w-4 mr-2\" />\n            Artist radio\n          </ContextMenuItem>\n        </ContextMenuSubContent>\n      </ContextMenuSub>\n      \n      <ContextMenuSeparator />\n      \n      <ContextMenuItem onClick={handleShare} className=\"gap-2\">\n        <Share className=\"h-4 w-4\" />\n        Share\n      </ContextMenuItem>\n      \n      <ContextMenuItem className=\"gap-2\">\n        <Copy className=\"h-4 w-4\" />\n        Copy artist link\n      </ContextMenuItem>\n    </ContextMenuContent>\n  );\n};\n\nconst PlaylistContextMenu: React.FC<PlaylistContextMenuProps> = ({ playlist, onClose }) => {\n  const navigate = useNavigate();\n  const { toast } = useToast();\n  \n  const handlePlay = useCallback(() => {\n    // TODO: Play playlist\n    toast({\n      title: 'Playing playlist',\n      description: playlist.name,\n    });\n    onClose?.();\n  }, [playlist, toast, onClose]);\n  \n  const handleEdit = useCallback(() => {\n    // TODO: Open playlist editor\n    toast({\n      title: 'Edit playlist',\n      description: `Editing ${playlist.name}`,\n    });\n    onClose?.();\n  }, [playlist, toast, onClose]);\n  \n  const handleDelete = useCallback(() => {\n    // TODO: Delete playlist with confirmation\n    toast({\n      title: 'Delete playlist',\n      description: `${playlist.name} deleted`,\n      variant: 'destructive',\n    });\n    onClose?.();\n  }, [playlist, toast, onClose]);\n  \n  const handleShare = useCallback(async () => {\n    const shareData = {\n      title: playlist.name,\n      text: `Check out this playlist: ${playlist.name}`,\n      url: `${window.location.origin}/playlist/${playlist.id}`,\n    };\n    \n    try {\n      if (navigator.share) {\n        await navigator.share(shareData);\n      } else {\n        await navigator.clipboard.writeText(shareData.url);\n        toast({\n          title: 'Link copied',\n          description: 'Playlist link copied to clipboard',\n        });\n      }\n    } catch (error) {\n      console.error('Share failed:', error);\n    }\n    onClose?.();\n  }, [playlist, toast, onClose]);\n  \n  return (\n    <ContextMenuContent className=\"w-56\">\n      <ContextMenuItem onClick={handlePlay} className=\"gap-2\">\n        <Play className=\"h-4 w-4\" />\n        Play\n      </ContextMenuItem>\n      \n      <ContextMenuItem onClick={handleEdit} className=\"gap-2\">\n        <Edit className=\"h-4 w-4\" />\n        Edit details\n      </ContextMenuItem>\n      \n      <ContextMenuSeparator />\n      \n      <ContextMenuItem onClick={handleShare} className=\"gap-2\">\n        <Share className=\"h-4 w-4\" />\n        Share\n      </ContextMenuItem>\n      \n      <ContextMenuItem className=\"gap-2\">\n        <Copy className=\"h-4 w-4\" />\n        Copy playlist link\n      </ContextMenuItem>\n      \n      <ContextMenuItem className=\"gap-2\">\n        <Download className=\"h-4 w-4\" />\n        Download\n      </ContextMenuItem>\n      \n      <ContextMenuSeparator />\n      \n      <ContextMenuItem onClick={handleDelete} className=\"gap-2 text-destructive\">\n        <Trash2 className=\"h-4 w-4\" />\n        Delete playlist\n      </ContextMenuItem>\n    </ContextMenuContent>\n  );\n};\n\nexport const SoundScapeContextMenu: React.FC<ContextMenuProps> = ({\n  children,\n  type,\n  item,\n  className,\n}) => {\n  const [isOpen, setIsOpen] = useState(false);\n  \n  const handleClose = useCallback(() => {\n    setIsOpen(false);\n  }, []);\n  \n  const renderContextMenu = () => {\n    switch (type) {\n      case 'track':\n        return <TrackContextMenu track={item} onClose={handleClose} />;\n      case 'artist':\n        return <ArtistContextMenu artist={item} onClose={handleClose} />;\n      case 'playlist':\n        return <PlaylistContextMenu playlist={item} onClose={handleClose} />;\n      default:\n        return null;\n    }\n  };\n  \n  return (\n    <ContextMenu onOpenChange={setIsOpen}>\n      <ContextMenuTrigger className={className}>\n        {children}\n      </ContextMenuTrigger>\n      {renderContextMenu()}\n    </ContextMenu>\n  );\n};\n\nexport default SoundScapeContextMenu;
+    <ContextMenuContent className="w-56">
+      <ContextMenuItem onClick={handlePlay} className="gap-2">
+        {isCurrentTrack && isPlaying ? (
+          <Pause className="h-4 w-4" />
+        ) : (
+          <Play className="h-4 w-4" />
+        )}
+        {isCurrentTrack && isPlaying ? 'Pause' : 'Play'}
+      </ContextMenuItem>
+      
+      <ContextMenuItem onClick={handlePlayNext} className="gap-2">
+        <Plus className="h-4 w-4" />
+        Play next
+      </ContextMenuItem>
+      
+      <ContextMenuItem onClick={handleAddToQueue} className="gap-2">
+        <ListMusic className="h-4 w-4" />
+        Add to queue
+      </ContextMenuItem>
+      
+      <ContextMenuSeparator />
+      
+      <ContextMenuItem onClick={handleLike} className="gap-2">
+        <Heart className="h-4 w-4" />
+        Add to Liked Songs
+      </ContextMenuItem>
+      
+      <ContextMenuSub>
+        <ContextMenuSubTrigger className="gap-2">
+          <Folder className="h-4 w-4" />
+          Add to playlist
+        </ContextMenuSubTrigger>
+        <ContextMenuSubContent className="w-48">
+          <ContextMenuItem>
+            <Plus className="h-4 w-4 mr-2" />
+            Create new playlist
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+          {/* TODO: List user's playlists */}
+          <ContextMenuItem>My Playlist #1</ContextMenuItem>
+          <ContextMenuItem>My Playlist #2</ContextMenuItem>
+        </ContextMenuSubContent>
+      </ContextMenuSub>
+      
+      <ContextMenuSeparator />
+      
+      <ContextMenuItem onClick={handleGoToArtist} className="gap-2">
+        <User className="h-4 w-4" />
+        Go to artist
+      </ContextMenuItem>
+      
+      <ContextMenuSub>
+        <ContextMenuSubTrigger className="gap-2">
+          <Radio className="h-4 w-4" />
+          Go to radio
+        </ContextMenuSubTrigger>
+        <ContextMenuSubContent className="w-48">
+          <ContextMenuItem>
+            <Radio className="h-4 w-4 mr-2" />
+            Song radio
+          </ContextMenuItem>
+          <ContextMenuItem>
+            <User className="h-4 w-4 mr-2" />
+            Artist radio
+          </ContextMenuItem>
+        </ContextMenuSubContent>
+      </ContextMenuSub>
+      
+      <ContextMenuSeparator />
+      
+      <ContextMenuItem onClick={handleShare} className="gap-2">
+        <Share className="h-4 w-4" />
+        Share
+      </ContextMenuItem>
+      
+      <ContextMenuItem onClick={handleCopyLink} className="gap-2">
+        <Copy className="h-4 w-4" />
+        Copy song link
+      </ContextMenuItem>
+      
+      <ContextMenuItem onClick={handleDownload} className="gap-2">
+        <Download className="h-4 w-4" />
+        Download
+      </ContextMenuItem>
+      
+      <ContextMenuSeparator />
+      
+      <ContextMenuItem onClick={handleShowInfo} className="gap-2">
+        <Info className="h-4 w-4" />
+        Show credits
+      </ContextMenuItem>
+    </ContextMenuContent>
+  );
+};
+
+const ArtistContextMenu: React.FC<ArtistContextMenuProps> = ({ artist, onClose }) => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  const handlePlay = useCallback(() => {
+    // TODO: Play artist's top tracks
+    toast({
+      title: 'Playing artist',
+      description: `Playing ${artist.name}'s top tracks`,
+    });
+    onClose?.();
+  }, [artist, toast, onClose]);
+  
+  const handleShuffle = useCallback(() => {
+    // TODO: Shuffle artist's tracks
+    toast({
+      title: 'Shuffling artist',
+      description: `Shuffling ${artist.name}'s tracks`,
+    });
+    onClose?.();
+  }, [artist, toast, onClose]);
+  
+  const handleFollow = useCallback(() => {
+    // TODO: Implement follow functionality
+    toast({
+      title: 'Following artist',
+      description: `Now following ${artist.name}`,
+    });
+    onClose?.();
+  }, [artist, toast, onClose]);
+  
+  const handleGoToArtist = useCallback(() => {
+    navigate(`/artist/${artist.id}`);
+    onClose?.();
+  }, [navigate, artist, onClose]);
+  
+  const handleShare = useCallback(async () => {
+    const shareData = {
+      title: artist.name,
+      text: `Check out ${artist.name} on SoundScape`,
+      url: `${window.location.origin}/artist/${artist.id}`,
+    };
+    
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(shareData.url);
+        toast({
+          title: 'Link copied',
+          description: 'Artist link copied to clipboard',
+        });
+      }
+    } catch (error) {
+      console.error('Share failed:', error);
+    }
+    onClose?.();
+  }, [artist, toast, onClose]);
+  
+  return (
+    <ContextMenuContent className="w-56">
+      <ContextMenuItem onClick={handlePlay} className="gap-2">
+        <Play className="h-4 w-4" />
+        Play
+      </ContextMenuItem>
+      
+      <ContextMenuItem onClick={handleShuffle} className="gap-2">
+        <Radio className="h-4 w-4" />
+        Shuffle
+      </ContextMenuItem>
+      
+      <ContextMenuSeparator />
+      
+      <ContextMenuItem onClick={handleFollow} className="gap-2">
+        <Plus className="h-4 w-4" />
+        Follow
+      </ContextMenuItem>
+      
+      <ContextMenuItem onClick={handleGoToArtist} className="gap-2">
+        <ExternalLink className="h-4 w-4" />
+        Go to artist page
+      </ContextMenuItem>
+      
+      <ContextMenuSub>
+        <ContextMenuSubTrigger className="gap-2">
+          <Radio className="h-4 w-4" />
+          Go to radio
+        </ContextMenuSubTrigger>
+        <ContextMenuSubContent className="w-48">
+          <ContextMenuItem>
+            <Radio className="h-4 w-4 mr-2" />
+            Artist radio
+          </ContextMenuItem>
+        </ContextMenuSubContent>
+      </ContextMenuSub>
+      
+      <ContextMenuSeparator />
+      
+      <ContextMenuItem onClick={handleShare} className="gap-2">
+        <Share className="h-4 w-4" />
+        Share
+      </ContextMenuItem>
+      
+      <ContextMenuItem className="gap-2">
+        <Copy className="h-4 w-4" />
+        Copy artist link
+      </ContextMenuItem>
+    </ContextMenuContent>
+  );
+};
+
+const PlaylistContextMenu: React.FC<PlaylistContextMenuProps> = ({ playlist, onClose }) => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  const handlePlay = useCallback(() => {
+    // TODO: Play playlist
+    toast({
+      title: 'Playing playlist',
+      description: playlist.name,
+    });
+    onClose?.();
+  }, [playlist, toast, onClose]);
+  
+  const handleEdit = useCallback(() => {
+    // TODO: Open playlist editor
+    toast({
+      title: 'Edit playlist',
+      description: `Editing ${playlist.name}`,
+    });
+    onClose?.();
+  }, [playlist, toast, onClose]);
+  
+  const handleDelete = useCallback(() => {
+    // TODO: Delete playlist with confirmation
+    toast({
+      title: 'Delete playlist',
+      description: `${playlist.name} deleted`,
+      variant: 'destructive',
+    });
+    onClose?.();
+  }, [playlist, toast, onClose]);
+  
+  const handleShare = useCallback(async () => {
+    const shareData = {
+      title: playlist.name,
+      text: `Check out this playlist: ${playlist.name}`,
+      url: `${window.location.origin}/playlist/${playlist.id}`,
+    };
+    
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(shareData.url);
+        toast({
+          title: 'Link copied',
+          description: 'Playlist link copied to clipboard',
+        });
+      }
+    } catch (error) {
+      console.error('Share failed:', error);
+    }
+    onClose?.();
+  }, [playlist, toast, onClose]);
+  
+  return (
+    <ContextMenuContent className="w-56">
+      <ContextMenuItem onClick={handlePlay} className="gap-2">
+        <Play className="h-4 w-4" />
+        Play
+      </ContextMenuItem>
+      
+      <ContextMenuItem onClick={handleEdit} className="gap-2">
+        <Edit className="h-4 w-4" />
+        Edit details
+      </ContextMenuItem>
+      
+      <ContextMenuSeparator />
+      
+      <ContextMenuItem onClick={handleShare} className="gap-2">
+        <Share className="h-4 w-4" />
+        Share
+      </ContextMenuItem>
+      
+      <ContextMenuItem className="gap-2">
+        <Copy className="h-4 w-4" />
+        Copy playlist link
+      </ContextMenuItem>
+      
+      <ContextMenuItem className="gap-2">
+        <Download className="h-4 w-4" />
+        Download
+      </ContextMenuItem>
+      
+      <ContextMenuSeparator />
+      
+      <ContextMenuItem onClick={handleDelete} className="gap-2 text-destructive">
+        <Trash2 className="h-4 w-4" />
+        Delete playlist
+      </ContextMenuItem>
+    </ContextMenuContent>
+  );
+};
+
+export const SoundScapeContextMenu: React.FC<ContextMenuProps> = ({
+  children,
+  type,
+  item,
+  className,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  const handleClose = useCallback(() => {
+    setIsOpen(false);
+  }, []);
+  
+  const renderContextMenu = () => {
+    switch (type) {
+      case 'track':
+        return <TrackContextMenu track={item} onClose={handleClose} />;
+      case 'artist':
+        return <ArtistContextMenu artist={item} onClose={handleClose} />;
+      case 'playlist':
+        return <PlaylistContextMenu playlist={item} onClose={handleClose} />;
+      default:
+        return null;
+    }
+  };
+  
+  return (
+    <ContextMenu onOpenChange={setIsOpen}>
+      <ContextMenuTrigger className={className}>
+        {children}
+      </ContextMenuTrigger>
+      {renderContextMenu()}
+    </ContextMenu>
+  );
+};
+
+export default SoundScapeContextMenu;
