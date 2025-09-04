@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Music } from 'lucide-react';
+import { MagicalBackground } from '@/components/MagicalBackground';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -116,7 +117,8 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center p-4">
+    <div className="min-h-screen page-background flex items-center justify-center p-4 relative overflow-hidden">
+      <MagicalBackground variant="minimal" className="opacity-30" />
       <div className="w-full max-w-md space-y-6">
         {/* Logo/Header */}
         <div className="text-center space-y-2">

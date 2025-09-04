@@ -23,7 +23,7 @@ export default function Index() {
 
   return (
     <div className="min-h-screen page-background relative overflow-hidden">
-      <MagicalBackground particleCount={12} />
+      <MagicalBackground variant="subtle" />
       
       {/* Header */}
       <header className="glass-effect border-border/20 sticky top-0 z-50">

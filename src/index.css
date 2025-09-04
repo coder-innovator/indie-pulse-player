@@ -8,71 +8,72 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Core brand colors - Softer, more cohesive palette */
-    --background: 220 25% 6%;
+    /* Core brand colors - Warm, welcoming palette */
+    --background: 215 25% 8%;
     --foreground: 0 0% 95%;
 
-    --card: 220 22% 8%;
+    --card: 215 22% 10%;
     --card-foreground: 0 0% 95%;
 
-    --popover: 220 22% 8%;
+    --popover: 215 22% 10%;
     --popover-foreground: 0 0% 95%;
 
-    /* Softer music-focused primary */
-    --primary: 260 85% 60%;
+    /* Warm, approachable primary */
+    --primary: 260 75% 65%;
     --primary-foreground: 0 0% 95%;
     
-    /* Muted secondary for accents */
-    --secondary: 220 18% 12%;
+    /* Subtle secondary tones */
+    --secondary: 215 18% 14%;
     --secondary-foreground: 0 0% 95%;
 
-    --muted: 220 18% 10%;
-    --muted-foreground: 215 20% 60%;
+    --muted: 215 18% 12%;
+    --muted-foreground: 215 20% 65%;
 
-    --accent: 30 80% 55%;
-    --accent-foreground: 220 25% 6%;
+    --accent: 35 75% 58%;
+    --accent-foreground: 215 25% 8%;
 
-    --destructive: 0 70% 55%;
+    --destructive: 0 65% 55%;
     --destructive-foreground: 0 0% 95%;
 
-    --border: 220 18% 12%;
-    --input: 220 18% 12%;
-    --ring: 260 85% 60%;
+    --border: 215 18% 14%;
+    --input: 215 18% 14%;
+    --ring: 260 75% 65%;
 
-    /* Music-specific design tokens - Softer gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(260 85% 60%), hsl(280 80% 65%));
-    --gradient-warm: linear-gradient(135deg, hsl(30 80% 55%), hsl(20 75% 50%));
-    --gradient-subtle: linear-gradient(180deg, hsl(220 22% 8%), hsl(220 25% 6%));
-    --gradient-dark: linear-gradient(135deg, hsl(220 25% 6%), hsl(240 25% 8%));
+    /* Warm, consistent design tokens */
+    --gradient-primary: linear-gradient(135deg, hsl(260 75% 65%), hsl(280 70% 70%));
+    --gradient-warm: linear-gradient(135deg, hsl(35 75% 58%), hsl(25 70% 55%));
+    --gradient-subtle: linear-gradient(180deg, hsl(215 22% 10%), hsl(215 25% 8%));
+    --gradient-dark: linear-gradient(135deg, hsl(215 25% 8%), hsl(235 25% 10%));
     
-    /* Glassmorphism effects - Softer */
-    --glass-bg: hsl(220 22% 8% / 0.9);
-    --glass-border: hsl(260 85% 60% / 0.15);
+    /* Soft glassmorphism effects */
+    --glass-bg: hsl(215 22% 10% / 0.8);
+    --glass-border: hsl(260 75% 65% / 0.2);
     
-    /* Shadows with music theme - Softer */
-    --shadow-glow: 0 0 30px hsl(260 85% 60% / 0.2);
-    --shadow-warm: 0 0 25px hsl(30 80% 55% / 0.25);
-    --shadow-elegant: 0 8px 25px -8px hsl(220 25% 6% / 0.4);
+    /* Gentle shadows - warm and inviting */
+    --shadow-glow: 0 0 20px hsl(260 75% 65% / 0.15);
+    --shadow-warm: 0 0 15px hsl(35 75% 58% / 0.2);
+    --shadow-elegant: 0 4px 20px -8px hsl(215 25% 8% / 0.3);
     
-    /* Smooth animations */
+    /* Smooth, professional animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --transition-gentle: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 
-    /* Magical UX Variables - Softer */
-    --magic-glow: 0 0 40px hsl(260 85% 60% / 0.25);
-    --magic-shadow: 0 15px 40px -15px hsl(260 85% 60% / 0.2);
-    --magic-border: 1px solid hsl(260 85% 60% / 0.2);
-    --magic-backdrop: blur(25px) saturate(150%);
+    /* Subtle magical UX */
+    --magic-glow: 0 0 25px hsl(260 75% 65% / 0.15);
+    --magic-shadow: 0 8px 25px -12px hsl(260 75% 65% / 0.15);
+    --magic-border: 1px solid hsl(260 75% 65% / 0.15);
+    --magic-backdrop: blur(20px) saturate(120%);
     
-    /* Animation timing */
+    /* Animation timing - gentler and more professional */
     --animation-fast: 0.2s;
-    --animation-normal: 0.4s;
-    --animation-slow: 0.8s;
-    --animation-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --animation-normal: 0.3s;
+    --animation-slow: 0.6s;
+    --animation-gentle: cubic-bezier(0.25, 0.46, 0.45, 0.94);
     --animation-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 
-    /* Page-specific backgrounds */
-    --page-background: linear-gradient(135deg, hsl(220 25% 6%), hsl(240 25% 8%));
+    /* Consistent page backgrounds */
+    --page-background: linear-gradient(135deg, hsl(215 25% 8%), hsl(235 25% 10%));
+    --warm-gradient: linear-gradient(135deg, hsl(215 25% 8%) 0%, hsl(225 20% 10%) 35%, hsl(235 18% 12%) 100%);
 
     --radius: 0.75rem;
 
@@ -161,12 +162,17 @@ All colors MUST be HSL.
 }
 
 @layer components {
-  /* Consistent page backgrounds */
+  /* Consistent warm page backgrounds */
   .page-background {
-    background: var(--page-background);
+    background: var(--warm-gradient);
   }
 
-  /* Text gradient utilities */
+  /* Enhanced warm gradient */
+  .warm-gradient {
+    background: var(--warm-gradient);
+  }
+
+  /* Text gradient utilities - warmer tones */
   .text-gradient {
     background: var(--gradient-primary);
     -webkit-background-clip: text;
@@ -181,23 +187,24 @@ All colors MUST be HSL.
     background-clip: text;
   }
 
-  /* Magic glow utility */
+  /* Subtle glow utility */
   .magic-glow {
     box-shadow: var(--magic-glow);
   }
 
-  /* Floating animation */
+  /* Gentle floating animation */
   @keyframes animate-float {
     0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
+    50% { transform: translateY(-5px); }
   }
 
   .animate-float {
-    animation: animate-float 3s ease-in-out infinite;
+    animation: animate-float 4s ease-in-out infinite;
   }
 
+  /* Professional page background alternative */
   .page-background-alt {
-    @apply bg-gradient-to-br from-slate-800 via-slate-700 to-slate-800;
+    background: linear-gradient(135deg, hsl(215 25% 8%) 0%, hsl(225 20% 10%) 50%, hsl(235 18% 12%) 100%);
   }
 
   /* Consistent card styles */
@@ -239,25 +246,27 @@ All colors MUST be HSL.
     @apply border border-border hover:bg-accent hover:text-accent-foreground transition-colors;
   }
 
-  /* Music player specific styles */
+  /* Enhanced music card with warm effects */
   .music-card {
-    @apply bg-card border border-border rounded-lg overflow-hidden;
-    @apply hover:shadow-glow transition-all duration-300;
-    @apply hover:border-primary/50;
-    transform-style: preserve-3d;
+    background: var(--glass-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
     transition: all var(--animation-normal) var(--animation-smooth);
   }
 
   .music-card:hover {
-    transform: translateY(-4px);
+    transform: translateY(-2px);
     box-shadow: var(--magic-shadow);
+    border-color: hsl(var(--primary) / 0.3);
   }
 
+  /* Professional glass effect */
   .glass-effect {
     background: var(--glass-bg);
     border: var(--magic-border);
     backdrop-filter: var(--magic-backdrop);
-    box-shadow: var(--magic-glow);
+    box-shadow: var(--shadow-elegant);
   }
 
   .glow-primary {
@@ -284,12 +293,12 @@ All colors MUST be HSL.
     background: var(--gradient-dark);
   }
 
-  /* Magical Button Effects - Softer */
+  /* Professional Button Effects - Warm and Inviting */
   .magic-button {
     position: relative;
     overflow: hidden;
     transition: all var(--animation-normal) var(--animation-smooth);
-    background: linear-gradient(135deg, hsl(260 85% 60%), hsl(280 80% 65%));
+    background: linear-gradient(135deg, hsl(260 75% 65%), hsl(280 70% 70%));
     border: none;
     color: white;
     font-weight: 600;
@@ -306,18 +315,18 @@ All colors MUST be HSL.
     width: 0;
     height: 0;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    transition: all var(--animation-normal) var(--animation-bounce);
+    background: rgba(255, 255, 255, 0.15);
+    transition: all var(--animation-normal) var(--animation-gentle);
     transform: translate(-50%, -50%);
   }
 
   .magic-button:hover::before {
-    width: 300px;
-    height: 300px;
+    width: 200px;
+    height: 200px;
   }
 
   .magic-button:hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
     box-shadow: var(--magic-glow);
   }
 
@@ -448,16 +457,16 @@ All colors MUST be HSL.
     100% { transform: scaleY(0.6); }
   }
 
-  /* Dynamic Background - Softer */
+  /* Professional Dynamic Background */
   .dynamic-bg {
     background: linear-gradient(-45deg, 
-      hsl(260 85% 60%), 
-      hsl(280 80% 65%), 
-      hsl(30 80% 55%), 
-      hsl(260 85% 60%)
+      hsl(260 75% 65%), 
+      hsl(280 70% 70%), 
+      hsl(35 75% 58%), 
+      hsl(260 75% 65%)
     );
     background-size: 400% 400%;
-    animation: gradientShift 20s ease infinite;
+    animation: gradientShift 25s ease infinite;
   }
 
   @keyframes gradientShift {

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TrackCard } from '@/components/TrackCard';
+import { MagicalBackground } from '@/components/MagicalBackground';
 import { MapPin, Search, Filter, Users, Music, TrendingUp } from 'lucide-react';
 
 interface Scene {
@@ -235,7 +236,7 @@ export default function Scenes() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen page-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Loading scenes...</p>
@@ -245,9 +246,11 @@ export default function Scenes() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen page-background relative overflow-hidden">
+      <MagicalBackground variant="minimal" className="opacity-40" />
+      
       {/* Header */}
-      <header className="border-b border-border bg-background/95 backdrop-blur sticky top-0 z-50">
+      <header className="glass-effect border-border/20 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Button 
