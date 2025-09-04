@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -6,9 +6,23 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Upload, Music, Image, X, Check } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Upload, Music, Image, X, Check, AlertCircle, CheckCircle, Clock, Zap } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import {
+  validateAudioFile,
+  uploadFileToStorage,
+  createTrackRecord,
+  cleanupFailedUpload,
+  extractAudioMetadata,
+  checkForDuplicateFile,
+  getOrCreateArtist,
+  UPLOAD_CONFIG,
+  type UploadProgress,
+  type AudioMetadata,
+} from '@/utils/uploadHelpers';
 
 interface UploadTrackProps {
   onUploadComplete: () => void;
@@ -23,6 +37,14 @@ interface TrackData {
   scene: string;
   audioFile: File | null;
   coverArt: File | null;
+}
+
+interface UploadState {
+  stage: 'idle' | 'validating' | 'uploading' | 'processing' | 'completing' | 'completed' | 'error';
+  progress: number;
+  message: string;
+  error?: string;
+  canRetry: boolean;
 }
 
 const MOOD_OPTIONS = [
@@ -45,8 +67,8 @@ const SCENE_OPTIONS = [
 
 export const UploadTrack = ({ onUploadComplete }: UploadTrackProps) => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
-  const [uploading, setUploading] = useState(false);
   const [trackData, setTrackData] = useState<TrackData>({
     title: '',
     description: '',
@@ -59,20 +81,50 @@ export const UploadTrack = ({ onUploadComplete }: UploadTrackProps) => {
   });
 
   const [errors, setErrors] = useState<Partial<TrackData>>({});
+  const [uploadState, setUploadState] = useState<UploadState>({
+    stage: 'idle',
+    progress: 0,
+    message: '',
+    canRetry: false,
+  });
+  const [audioMetadata, setAudioMetadata] = useState<AudioMetadata>({});
+  const [isDuplicateFile, setIsDuplicateFile] = useState(false);
+  const [uploadedFilePath, setUploadedFilePath] = useState<string | null>(null);
+  const [createdTrackId, setCreatedTrackId] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
+  /**
+   * Enhanced step validation with detailed error messages
+   */
   const validateStep = (step: number): boolean => {
     const newErrors: Partial<TrackData> = {};
 
     if (step === 1) {
-      if (!trackData.title.trim()) newErrors.title = 'Title is required';
-      if (!trackData.description.trim()) newErrors.description = 'Description is required';
+      if (!trackData.title.trim()) {
+        newErrors.title = 'Title is required';
+      } else if (trackData.title.length > 100) {
+        newErrors.title = 'Title must be 100 characters or less';
+      }
+      
+      if (!trackData.description.trim()) {
+        newErrors.description = 'Description is required';
+      } else if (trackData.description.length > 500) {
+        newErrors.description = 'Description must be 500 characters or less';
+      }
+      
       if (!trackData.genre) newErrors.genre = 'Genre is required';
       if (!trackData.mood) newErrors.mood = 'Mood is required';
       if (!trackData.scene) newErrors.scene = 'Scene is required';
+      
+      if (trackData.bpm < 60 || trackData.bpm > 200) {
+        newErrors.bpm = 'BPM must be between 60 and 200';
+      }
     }
 
     if (step === 2) {
-      if (!trackData.audioFile) newErrors.audioFile = 'Audio file is required';
+      if (!trackData.audioFile) {
+        newErrors.audioFile = 'Audio file is required';
+      }
     }
 
     setErrors(newErrors);
@@ -89,149 +141,342 @@ export const UploadTrack = ({ onUploadComplete }: UploadTrackProps) => {
     setCurrentStep(currentStep - 1);
   };
 
-  const handleFileChange = (field: 'audioFile' | 'coverArt', file: File | null) => {
+  /**
+   * Enhanced file change handler with validation
+   */
+  const handleFileChange = useCallback(async (field: 'audioFile' | 'coverArt', file: File | null) => {
     setTrackData(prev => ({ ...prev, [field]: file }));
+    
+    // Clear existing errors
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
-  };
+    
+    // Reset duplicate flag and metadata when file changes
+    if (field === 'audioFile') {
+      setIsDuplicateFile(false);
+      setAudioMetadata({});
+      
+      if (file) {
+        // Validate file immediately
+        setUploadState({
+          stage: 'validating',
+          progress: 0,
+          message: 'Validating file...',
+          canRetry: false,
+        });
+        
+        try {
+          const validation = await validateAudioFile(file);
+          
+          if (!validation.isValid) {
+            setErrors(prev => ({ ...prev, audioFile: validation.error }));
+            setUploadState({
+              stage: 'error',
+              progress: 0,
+              message: validation.error || 'File validation failed',
+              error: validation.error,
+              canRetry: false,
+            });
+            return;
+          }
+          
+          // Check for duplicates
+          if (user && validation.fileInfo) {
+            const isDuplicate = await checkForDuplicateFile(validation.fileInfo.hash, user.id);
+            setIsDuplicateFile(isDuplicate);
+            
+            if (isDuplicate) {
+              toast({
+                title: "Duplicate File",
+                description: "This file has already been uploaded. You can continue if you want to upload it again.",
+                variant: "destructive",
+              });
+            }
+          }
+          
+          // Extract metadata
+          const metadata = await extractAudioMetadata(file);
+          setAudioMetadata(metadata);
+          
+          setUploadState({
+            stage: 'idle',
+            progress: 0,
+            message: `File validated successfully (${(file.size / 1024 / 1024).toFixed(1)} MB)`,
+            canRetry: false,
+          });
+          
+          toast({
+            title: "File Validated",
+            description: `${file.name} is ready for upload`,
+          });
+          
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Validation failed';
+          setErrors(prev => ({ ...prev, audioFile: errorMessage }));
+          setUploadState({
+            stage: 'error',
+            progress: 0,
+            message: errorMessage,
+            error: errorMessage,
+            canRetry: false,
+          });
+        }
+      } else {
+        setUploadState({
+          stage: 'idle',
+          progress: 0,
+          message: '',
+          canRetry: false,
+        });
+      }
+    }
+  }, [errors, user, toast]);
 
-  const handleUpload = async () => {
+  /**
+   * Comprehensive upload handler with progress tracking and error recovery
+   */
+  const handleUpload = useCallback(async () => {
     if (!user || !trackData.audioFile) return;
 
-    setUploading(true);
+    // Create abort controller for cancellation
+    abortControllerRef.current = new AbortController();
+    
+    // Reset state
+    setUploadedFilePath(null);
+    setCreatedTrackId(null);
+    
+    const onProgress = (progress: UploadProgress) => {
+      setUploadState({
+        stage: progress.stage,
+        progress: progress.progress,
+        message: progress.message,
+        canRetry: false,
+      });
+    };
+
     try {
-      // Step 1: Get or create artist profile
-      let { data: artist } = await supabase
-        .from('artists')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!artist) {
-        const { data: newArtist, error: artistError } = await supabase
-          .from('artists')
-          .insert({
-            user_id: user.id,
-            name: user.email?.split('@')[0] || 'Unknown Artist',
-            bio: 'New artist on SoundScape'
-          })
-          .select('id')
-          .single();
-
-        if (artistError) throw artistError;
-        artist = newArtist;
+      // Step 1: Final validation
+      onProgress({
+        stage: 'validating',
+        progress: 5,
+        message: 'Performing final validation...',
+      });
+      
+      const validation = await validateAudioFile(trackData.audioFile);
+      if (!validation.isValid) {
+        throw new Error(validation.error);
       }
-
-      // Step 2: Upload audio file
-      const audioFileName = `${user.id}/${Date.now()}_${trackData.audioFile.name}`;
-      const { data: audioData, error: audioError } = await supabase.storage
-        .from('audio-files')
-        .upload(audioFileName, trackData.audioFile);
-
-      if (audioError) throw audioError;
-
-      // Get public URL for audio file
-      const { data: audioUrlData } = supabase.storage
-        .from('audio-files')
-        .getPublicUrl(audioFileName);
-
-      // Step 3: Upload cover art if provided
+      
+      // Step 2: Get or create artist
+      onProgress({
+        stage: 'processing',
+        progress: 10,
+        message: 'Setting up artist profile...',
+      });
+      
+      const artist = await getOrCreateArtist(user.id, user.email);
+      if (!artist) {
+        throw new Error('Failed to create artist profile');
+      }
+      
+      // Step 3: Upload audio file
+      onProgress({
+        stage: 'uploading',
+        progress: 15,
+        message: 'Starting audio file upload...',
+      });
+      
+      const audioFileName = `${user.id}/${Date.now()}_${trackData.audioFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+      const audioUploadResult = await uploadFileToStorage(
+        trackData.audioFile,
+        'audio-files',
+        audioFileName,
+        (progress) => {
+          // Adjust progress to 15-70% range for audio upload
+          const adjustedProgress = 15 + (progress.progress * 0.55);
+          onProgress({
+            ...progress,
+            progress: adjustedProgress,
+          });
+        }
+      );
+      
+      if (!audioUploadResult.success) {
+        throw new Error(audioUploadResult.error || 'Audio upload failed');
+      }
+      
+      setUploadedFilePath(audioUploadResult.filePath || null);
+      
+      // Step 4: Upload cover art if provided
       let coverUrl = '';
       if (trackData.coverArt) {
-        const coverFileName = `${user.id}/${Date.now()}_${trackData.coverArt.name}`;
-        const { data: coverData, error: coverError } = await supabase.storage
-          .from('cover-art')
-          .upload(coverFileName, trackData.coverArt);
-
-        if (coverError) throw coverError;
+        onProgress({
+          stage: 'uploading',
+          progress: 70,
+          message: 'Uploading cover art...',
+        });
         
-        const { data: coverUrlData } = supabase.storage
-          .from('cover-art')
-          .getPublicUrl(coverFileName);
-        coverUrl = coverUrlData.publicUrl;
+        const coverFileName = `${user.id}/${Date.now()}_${trackData.coverArt.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+        const coverUploadResult = await uploadFileToStorage(
+          trackData.coverArt,
+          'cover-art',
+          coverFileName,
+          () => {} // No progress callback for cover art
+        );
+        
+        if (coverUploadResult.success) {
+          coverUrl = coverUploadResult.fileUrl || '';
+        } else {
+          console.warn('Cover art upload failed:', coverUploadResult.error);
+          // Continue without cover art
+        }
       }
-
-      // Step 4: Create track record with correct schema
-      const { data: newTrack, error: trackError } = await supabase
-        .from('tracks')
-        .insert({
-          artist_id: artist.id,
+      
+      // Step 5: Create database record
+      onProgress({
+        stage: 'processing',
+        progress: 85,
+        message: 'Creating track record...',
+      });
+      
+      const trackRecord = await createTrackRecord(
+        {
           title: trackData.title,
           description: trackData.description,
           bpm: trackData.bpm,
-          stream_url: audioUrlData.publicUrl, // Use stream_url as per schema
-          cover_url: coverUrl || '/src/assets/sample-cover-1.jpg',
-          popularity_tier: 'emerging',
-          unique_listeners: 0,
-          total_plays: 0
-        })
-        .select('id')
-        .single();
-
-      if (trackError) throw trackError;
-
-      // Step 5: Create tags for mood, genre, and scene
-      const tagTypes = [
-        { name: trackData.mood, type: 'mood' },
-        { name: trackData.genre, type: 'genre' },
-        { name: trackData.scene, type: 'scene' }
-      ];
-
-      for (const tagInfo of tagTypes) {
-        // Insert tag if it doesn't exist
-        const { data: existingTag } = await supabase
-          .from('tags')
-          .select('id')
-          .eq('name', tagInfo.name)
-          .eq('type', tagInfo.type)
-          .single();
-
-        let tagId;
-        if (existingTag) {
-          tagId = existingTag.id;
-        } else {
-          const { data: newTag, error: tagError } = await supabase
-            .from('tags')
-            .insert({
-              name: tagInfo.name,
-              type: tagInfo.type
-            })
-            .select('id')
-            .single();
-
-          if (tagError) throw tagError;
-          tagId = newTag.id;
-        }
-
-        // Create track_tag relationship
-        const { error: trackTagError } = await supabase
-          .from('track_tags')
-          .insert({
-            track_id: newTrack.id,
-            tag_id: tagId
-          });
-
-        if (trackTagError) throw trackTagError;
+          mood: trackData.mood,
+          genre: trackData.genre,
+          scene: trackData.scene,
+          audioUrl: audioUploadResult.fileUrl!,
+          coverUrl,
+          fileHash: validation.fileInfo!.hash,
+          metadata: audioMetadata,
+        },
+        artist.id
+      );
+      
+      if (!trackRecord.success) {
+        throw new Error(trackRecord.error || 'Failed to create track record');
       }
-
-      onUploadComplete();
+      
+      setCreatedTrackId(trackRecord.trackId || null);
+      
+      // Step 6: Complete
+      onProgress({
+        stage: 'completed',
+        progress: 100,
+        message: 'Upload completed successfully!',
+      });
+      
+      toast({
+        title: "Upload Successful!",
+        description: `"${trackData.title}" has been uploaded successfully.`,
+      });
+      
+      // Wait a moment to show success, then callback
+      setTimeout(() => {
+        onUploadComplete();
+      }, 2000);
+      
     } catch (error) {
       console.error('Upload error:', error);
-      // Handle error display
+      
+      const errorMessage = error instanceof Error ? error.message : 'Upload failed';
+      
+      // Cleanup on error
+      await cleanupFailedUpload(
+        'audio-files',
+        uploadedFilePath || undefined,
+        createdTrackId || undefined
+      );
+      
+      setUploadState({
+        stage: 'error',
+        progress: 0,
+        message: errorMessage,
+        error: errorMessage,
+        canRetry: true,
+      });
+      
+      toast({
+        title: "Upload Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
-      setUploading(false);
+      abortControllerRef.current = null;
     }
-  };
+  }, [user, trackData, audioMetadata, onUploadComplete, toast]);
+  
+  /**
+   * Cancel upload
+   */
+  const handleCancelUpload = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    
+    setUploadState({
+      stage: 'idle',
+      progress: 0,
+      message: 'Upload cancelled',
+      canRetry: false,
+    });
+    
+    // Cleanup any partial uploads
+    cleanupFailedUpload(
+      'audio-files',
+      uploadedFilePath || undefined,
+      createdTrackId || undefined
+    );
+  }, [uploadedFilePath, createdTrackId]);
+  
+  /**
+   * Retry upload
+   */
+  const handleRetryUpload = useCallback(() => {
+    setUploadState({
+      stage: 'idle',
+      progress: 0,
+      message: '',
+      canRetry: false,
+    });
+    handleUpload();
+  }, [handleUpload]);
 
+  /**
+   * Enhanced step progression logic
+   */
   const canProceed = () => {
     switch (currentStep) {
       case 1:
         return trackData.title && trackData.description && trackData.genre && trackData.mood && trackData.scene;
       case 2:
-        return trackData.audioFile;
+        return trackData.audioFile && uploadState.stage !== 'error' && uploadState.stage !== 'validating';
       default:
         return false;
+    }
+  };
+  
+  /**
+   * Get upload stage icon
+   */
+  const getStageIcon = (stage: UploadState['stage']) => {
+    switch (stage) {
+      case 'validating':
+        return <Clock className="w-4 h-4 animate-spin" />;
+      case 'uploading':
+        return <Upload className="w-4 h-4 animate-pulse" />;
+      case 'processing':
+        return <Zap className="w-4 h-4 animate-pulse" />;
+      case 'completed':
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'error':
+        return <AlertCircle className="w-4 h-4 text-red-500" />;
+      default:
+        return null;
     }
   };
 
@@ -271,9 +516,13 @@ export const UploadTrack = ({ onUploadComplete }: UploadTrackProps) => {
                 value={trackData.title}
                 onChange={(e) => setTrackData(prev => ({ ...prev, title: e.target.value }))}
                 placeholder="Enter track title"
+                maxLength={100}
                 className={errors.title ? 'border-red-500' : ''}
               />
-              {errors.title && <p className="text-sm text-red-500">{errors.title}</p>}
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{errors.title && <span className="text-red-500">{errors.title}</span>}</span>
+                <span>{trackData.title.length}/100</span>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -284,9 +533,13 @@ export const UploadTrack = ({ onUploadComplete }: UploadTrackProps) => {
                 onChange={(e) => setTrackData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Describe your track..."
                 rows={3}
+                maxLength={500}
                 className={errors.description ? 'border-red-500' : ''}
               />
-              {errors.description && <p className="text-sm text-red-500">{errors.description}</p>}
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{errors.description && <span className="text-red-500">{errors.description}</span>}</span>
+                <span>{trackData.description.length}/500</span>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -363,30 +616,62 @@ export const UploadTrack = ({ onUploadComplete }: UploadTrackProps) => {
               <Label>Audio File *</Label>
               <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
                 {trackData.audioFile ? (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Music className="w-8 h-8 mx-auto text-primary" />
-                    <p className="font-medium">{trackData.audioFile.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {(trackData.audioFile.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
+                    <div>
+                      <p className="font-medium">{trackData.audioFile.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {(trackData.audioFile.size / 1024 / 1024).toFixed(2)} MB
+                        {audioMetadata.duration && (
+                          <span> • {Math.round(audioMetadata.duration)}s</span>
+                        )}
+                      </p>
+                    </div>
+                    
+                    {/* File validation status */}
+                    {uploadState.stage !== 'idle' && (
+                      <div className="flex items-center justify-center gap-2 text-sm">
+                        {getStageIcon(uploadState.stage)}
+                        <span className={uploadState.stage === 'error' ? 'text-red-500' : 'text-blue-500'}>
+                          {uploadState.message}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Duplicate file warning */}
+                    {isDuplicateFile && (
+                      <Alert className="text-left">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          This file appears to be a duplicate. You can still proceed with the upload.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleFileChange('audioFile', null)}
+                      disabled={uploadState.stage === 'validating'}
                     >
                       <X className="w-4 h-4 mr-2" />
                       Remove
                     </Button>
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Upload className="w-8 h-8 mx-auto text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      Drag and drop your audio file here, or click to browse
-                    </p>
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Drag and drop your audio file here, or click to browse
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Supported: {UPLOAD_CONFIG.ALLOWED_AUDIO_TYPES.join(', ')} • Max {UPLOAD_CONFIG.MAX_FILE_SIZE / 1024 / 1024}MB
+                      </p>
+                    </div>
                     <Input
                       type="file"
-                      accept="audio/*"
+                      accept={UPLOAD_CONFIG.ALLOWED_AUDIO_MIMES.join(',')}
                       onChange={(e) => {
                         const file = e.target.files?.[0] || null;
                         handleFileChange('audioFile', file);
@@ -456,7 +741,8 @@ export const UploadTrack = ({ onUploadComplete }: UploadTrackProps) => {
           <CardHeader>
             <CardTitle>Review & Upload</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
+            {/* Track Details Review */}
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
@@ -481,7 +767,12 @@ export const UploadTrack = ({ onUploadComplete }: UploadTrackProps) => {
                 </div>
                 <div>
                   <span className="font-medium">Audio File:</span>
-                  <p className="text-muted-foreground">{trackData.audioFile?.name}</p>
+                  <p className="text-muted-foreground">
+                    {trackData.audioFile?.name}
+                    {audioMetadata.duration && (
+                      <span className="block text-xs">{Math.round(audioMetadata.duration)}s duration</span>
+                    )}
+                  </p>
                 </div>
               </div>
 
@@ -491,14 +782,64 @@ export const UploadTrack = ({ onUploadComplete }: UploadTrackProps) => {
               </div>
             </div>
 
-            <Button
-              onClick={handleUpload}
-              disabled={uploading}
-              className="w-full"
-              size="lg"
-            >
-              {uploading ? 'Uploading...' : 'Upload Track'}
-            </Button>
+            {/* Upload Progress */}
+            {uploadState.stage !== 'idle' && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  {getStageIcon(uploadState.stage)}
+                  <span className="text-sm font-medium">{uploadState.message}</span>
+                </div>
+                
+                {uploadState.progress > 0 && (
+                  <div className="space-y-1">
+                    <Progress value={uploadState.progress} className="w-full" />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>{uploadState.stage}</span>
+                      <span>{Math.round(uploadState.progress)}%</span>
+                    </div>
+                  </div>
+                )}
+                
+                {uploadState.stage === 'error' && uploadState.error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{uploadState.error}</AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            )}
+
+            {/* Upload Controls */}
+            <div className="flex gap-2">
+              {uploadState.stage === 'idle' || uploadState.stage === 'error' ? (
+                <Button
+                  onClick={uploadState.canRetry ? handleRetryUpload : handleUpload}
+                  className="flex-1"
+                  size="lg"
+                  disabled={!trackData.audioFile}
+                >
+                  {uploadState.canRetry ? (
+                    <>Retry Upload</>
+                  ) : (
+                    <>Upload Track</>
+                  )}
+                </Button>
+              ) : uploadState.stage === 'completed' ? (
+                <Button className="flex-1" size="lg" disabled>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Upload Complete!
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleCancelUpload}
+                  variant="destructive"
+                  className="flex-1"
+                  size="lg"
+                >
+                  Cancel Upload
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}
@@ -506,13 +847,21 @@ export const UploadTrack = ({ onUploadComplete }: UploadTrackProps) => {
       {/* Navigation Buttons */}
       <div className="flex justify-between">
         {currentStep > 1 && (
-          <Button variant="outline" onClick={handlePrevious}>
+          <Button 
+            variant="outline" 
+            onClick={handlePrevious}
+            disabled={uploadState.stage === 'uploading' || uploadState.stage === 'processing'}
+          >
             Previous
           </Button>
         )}
         
         {currentStep < 3 && (
-          <Button onClick={handleNext} disabled={!canProceed()}>
+          <Button 
+            onClick={handleNext} 
+            disabled={!canProceed()}
+            className="ml-auto"
+          >
             Next
           </Button>
         )}

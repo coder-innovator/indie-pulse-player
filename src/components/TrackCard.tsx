@@ -4,6 +4,9 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Play, Pause, Heart, Plus, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { usePlayerStore } from "@/stores/playerStore";
+import { SoundScapeContextMenu } from "@/components/ContextMenu";
+import { useOfflineAware } from "@/hooks/useOfflineDetection";
 
 export interface Track {
   id: string;
@@ -28,23 +31,70 @@ export interface Track {
 
 interface TrackCardProps {
   track: Track;
-  isPlaying?: boolean;
-  onPlay?: (track: Track) => void;
+  isPlaying?: boolean; // Optional override - will use global state if not provided
+  onPlay?: (track: Track) => void; // Optional override - will use global player if not provided
   onLike?: (trackId: string) => void;
   onAddToQueue?: (trackId: string) => void;
   className?: string;
+  showAddToQueue?: boolean; // Whether to show add to queue button
 }
 
 export function TrackCard({ 
   track, 
-  isPlaying = false, 
-  onPlay, 
+  isPlaying: propIsPlaying, 
+  onPlay: propOnPlay, 
   onLike, 
   onAddToQueue,
-  className 
+  className,
+  showAddToQueue = true
 }: TrackCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  
+  // Offline awareness
+  const { shouldShowContent, isOffline } = useOfflineAware();
+  const isContentAvailable = shouldShowContent(track.id);
+  
+  // Global player state
+  const { 
+    currentTrack, 
+    isPlaying: globalIsPlaying, 
+    setCurrentTrack, 
+    togglePlay,
+    addToQueue 
+  } = usePlayerStore();
+  
+  // Determine if this track is currently playing
+  const isCurrentTrack = currentTrack?.id === track.id;
+  const isPlaying = propIsPlaying !== undefined ? propIsPlaying : (isCurrentTrack && globalIsPlaying);
+  
+  // Handle play action
+  const handlePlay = () => {
+    if (propOnPlay) {
+      // Use provided onPlay handler
+      propOnPlay(track);
+    } else {
+      // Use global player
+      if (isCurrentTrack) {
+        // Toggle play/pause for current track
+        togglePlay();
+      } else {
+        // Set new track and play
+        setCurrentTrack(track);
+        // The player will auto-play when a new track is set
+      }
+    }
+  };
+  
+  // Handle add to queue
+  const handleAddToQueue = () => {
+    if (onAddToQueue) {
+      onAddToQueue(track.id);
+    } else {
+      // Use global queue
+      addToQueue(track);
+    }
+  };
 
   const getPopularityBadge = (tier?: string, listeners?: number) => {
     if (!tier) return null;
@@ -72,16 +122,18 @@ export function TrackCard({
   };
 
   return (
-    <Card 
-      className={cn(
-        "group relative music-card p-4 cursor-pointer transition-all duration-300",
-        "hover:scale-[1.02] hover:bg-card/80",
-        className
-      )}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onClick={() => onPlay?.(track)}
-    >
+    <SoundScapeContextMenu type="track" item={track}>
+      <Card 
+        className={cn(
+          "group relative music-card p-4 cursor-pointer transition-all duration-300",
+          "hover:scale-[1.02] hover:bg-card/80",
+          isOffline && !isContentAvailable && "opacity-50 grayscale",
+          className
+        )}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onClick={isContentAvailable ? handlePlay : undefined}
+      >
       <div className="relative">
         {/* Album Cover */}
         <div className="relative aspect-square mb-4 overflow-hidden rounded-lg">
@@ -114,7 +166,7 @@ export function TrackCard({
               )}
               onClick={(e) => {
                 e.stopPropagation();
-                onPlay?.(track);
+                handlePlay();
               }}
               aria-label={isPlaying ? `Pause ${track.title}` : `Play ${track.title}`}
             >
@@ -182,18 +234,20 @@ export function TrackCard({
                 <Heart className={cn("w-4 h-4", track.isLiked && "fill-current")} />
               </Button>
               
-              <Button
-                size="icon"
-                variant="ghost"
-                className="w-8 h-8 focus-ring"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddToQueue?.(track.id);
-                }}
-                aria-label={`Add ${track.title} to queue`}
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
+              {showAddToQueue && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="w-8 h-8 focus-ring"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAddToQueue();
+                  }}
+                  aria-label={`Add ${track.title} to queue`}
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              )}
             </div>
 
             <div className="flex items-center gap-2">
@@ -212,6 +266,7 @@ export function TrackCard({
           </div>
         </div>
       </div>
-    </Card>
+      </Card>
+    </SoundScapeContextMenu>
   );
 }
