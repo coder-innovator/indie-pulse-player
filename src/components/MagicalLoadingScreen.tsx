@@ -1,5 +1,4 @@
-import { MagicalBackground } from "./MagicalBackground";
-import { MagicalLoader } from "./MagicalLoader";
+import { GlassLoader } from "./GlassCard";
 
 interface MagicalLoadingScreenProps {
   title?: string;
@@ -15,7 +14,7 @@ export function MagicalLoadingScreen({
   if (variant === 'minimal') {
     return (
       <div className="flex items-center justify-center p-8">
-        <MagicalLoader size="lg" variant="liquid" />
+        <GlassLoader size="lg" />
       </div>
     );
   }
@@ -23,14 +22,13 @@ export function MagicalLoadingScreen({
   if (variant === 'fullscreen') {
     return (
       <div className="min-h-screen page-background flex items-center justify-center">
-        <MagicalBackground />
-        <div className="relative z-10 text-center space-y-8">
-          <div className="space-y-6">
-            <MagicalLoader size="lg" variant="liquid" />
-            <h2 className="text-3xl font-bold text-gradient fluid-text">
+        <div className="glass-card text-center space-y-6 max-w-md mx-4 animate-glass-in">
+          <GlassLoader size="lg" className="mx-auto" />
+          <div className="space-y-2">
+            <h2 className="text-3xl font-bold text-gradient">
               {title}
             </h2>
-            <p className="text-muted-foreground fluid-text-sm">
+            <p className="text-muted-foreground">
               {subtitle}
             </p>
           </div>
@@ -42,14 +40,13 @@ export function MagicalLoadingScreen({
   // Default variant
   return (
     <div className="min-h-screen page-background flex items-center justify-center">
-      <MagicalBackground />
-      <div className="relative z-10 text-center space-y-8">
-        <div className="space-y-6">
-          <MagicalLoader size="lg" variant="liquid" />
-          <h2 className="text-3xl font-bold text-gradient fluid-text">
+      <div className="glass-card text-center space-y-6 max-w-md mx-4 animate-glass-in">
+        <GlassLoader size="lg" className="mx-auto" />
+        <div className="space-y-2">
+          <h2 className="text-3xl font-bold text-gradient">
             {title}
           </h2>
-          <p className="text-muted-foreground fluid-text-sm">
+          <p className="text-muted-foreground">
             {subtitle}
           </p>
         </div>

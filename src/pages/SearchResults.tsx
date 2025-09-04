@@ -3,8 +3,9 @@ import { useSearchParams } from "react-router-dom";
 import { TrackCard, Track } from "@/components/TrackCard";
 import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { GlassCard, GlassLoader } from "@/components/GlassCard";
 import { useTracks } from "@/hooks/useTracks";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -88,31 +89,40 @@ const SearchResults = () => {
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <Card className="p-8 text-center">
-          <h1 className="text-2xl font-bold text-destructive mb-4">Error Loading Results</h1>
-          <p className="text-muted-foreground mb-4">{error}</p>
-          <Button onClick={() => window.location.reload()}>Try Again</Button>
-        </Card>
+      <div className="min-h-screen page-background">
+        <div className="container mx-auto px-4 py-8">
+          <GlassCard className="p-8 text-center">
+            <h1 className="text-2xl font-bold text-destructive mb-4">Error Loading Results</h1>
+            <p className="text-muted-foreground mb-4">{error}</p>
+            <Button onClick={() => window.location.reload()}>Try Again</Button>
+          </GlassCard>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">
-          {query ? `Search Results for "${query}"` : 'Browse Music'}
-        </h1>
-        <p className="text-muted-foreground">
-          {loading ? 'Loading...' : `${tracks.length} tracks found`}
-        </p>
-      </div>
+    <div className="min-h-screen page-background">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2 text-gradient">
+            {query ? `Search Results for "${query}"` : 'Browse Music'}
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            {loading ? 'Loading...' : `${tracks.length} tracks found`}
+          </p>
+        </div>
 
       {/* Search and Filters */}
       <div className="mb-8">
-        <SearchBar value={searchQuery} onChange={setSearchQuery} onSearch={handleSearch} />
+        <SearchBar 
+          value={searchQuery} 
+          onChange={setSearchQuery} 
+          onSearch={handleSearch}
+          filters={filters}
+          onFiltersChange={setFilters}
+        />
         
         {/* Active Filters Display */}
         {getFilterCount() > 0 && (
@@ -149,39 +159,41 @@ const SearchResults = () => {
         )}
       </div>
 
-      {/* Results */}
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {[...Array(8)].map((_, i) => (
-            <Card key={i} className="p-4 animate-pulse">
-              <div className="aspect-square bg-muted rounded-lg mb-4"></div>
-              <div className="h-4 bg-muted rounded mb-2"></div>
-              <div className="h-3 bg-muted rounded w-2/3"></div>
-            </Card>
-          ))}
-        </div>
-      ) : tracks.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {tracks.map((track) => (
-            <TrackCard
-              key={track.id}
-              track={track}
-              onPlay={handlePlay}
-              onLike={handleLike}
-              onAddToQueue={handleAddToQueue}
-            />
-          ))}
-        </div>
-      ) : (
-        <Card className="p-12 text-center">
-          <Search className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-xl font-semibold mb-2">No tracks found</h3>
-          <p className="text-muted-foreground mb-4">
-            Try adjusting your search terms or filters
-          </p>
-          <Button onClick={clearFilters}>Clear Filters</Button>
-        </Card>
-      )}
+        {/* Results */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {[...Array(8)].map((_, i) => (
+              <GlassCard key={i} className="p-6 animate-glass-in" style={{animationDelay: `${i * 0.1}s`}}>
+                <div className="aspect-square bg-muted/30 rounded-lg mb-4 loading-pulse"></div>
+                <div className="h-4 bg-muted/30 rounded mb-2 loading-pulse"></div>
+                <div className="h-3 bg-muted/30 rounded w-2/3 loading-pulse"></div>
+              </GlassCard>
+            ))}
+          </div>
+        ) : tracks.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {tracks.map((track, index) => (
+              <div key={track.id} className="animate-glass-in" style={{animationDelay: `${index * 0.05}s`}}>
+                <TrackCard
+                  track={track}
+                  onPlay={handlePlay}
+                  onLike={handleLike}
+                  onAddToQueue={handleAddToQueue}
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <GlassCard className="p-12 text-center">
+            <Search className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-xl font-semibold mb-2">No tracks found</h3>
+            <p className="text-muted-foreground mb-4">
+              Try adjusting your search terms or filters
+            </p>
+            <Button onClick={clearFilters} className="glass-button">Clear Filters</Button>
+          </GlassCard>
+        )}
+      </div>
     </div>
   );
 };
