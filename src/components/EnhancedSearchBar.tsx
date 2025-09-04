@@ -87,7 +87,7 @@ const SearchResultItem: React.FC<{
       <div className="relative w-10 h-10 rounded-md overflow-hidden bg-secondary flex-shrink-0">
         {track.cover_art_url ? (
           <img 
-            src={track.cover_art_url} 
+            src={track.cover_art_url}
             alt={track.title} 
             className="w-full h-full object-cover"
           />
@@ -362,9 +362,9 @@ export function EnhancedSearchBar({
       id: track.id,
       title: track.title,
       artist: track.artist.name,
-      cover_art_url: track.cover_art_url,
-      stream_url: track.stream_url,
-      duration: track.duration,
+      coverUrl: track.cover_art_url || '',
+      streamUrl: track.stream_url || '',
+      duration: track.duration.toString(),
     });
   }, [setCurrentTrack]);
   
@@ -682,7 +682,7 @@ export function EnhancedSearchBar({
               {currentFilters.duration}
               <button
                 onClick={() => {
-                  const newFilters = { ...currentFilters, duration: '' };
+                  const newFilters = { ...currentFilters, duration: '' as any };
                   handleFiltersChange(newFilters);
                 }}
                 className="ml-1 hover:text-destructive"

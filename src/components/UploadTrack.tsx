@@ -116,13 +116,13 @@ export const UploadTrack = ({ onUploadComplete }: UploadTrackProps) => {
       if (!trackData.mood) newErrors.mood = 'Mood is required';
       if (!trackData.scene) newErrors.scene = 'Scene is required';
       
-      if (trackData.bpm < 60 || trackData.bpm > 200) {
+      if ((trackData.bpm as number) < 60 || (trackData.bpm as number) > 200) {
         newErrors.bpm = 'BPM must be between 60 and 200';
       }
     }
 
     if (step === 2) {
-      if (!trackData.audioFile) {
+      if (!(trackData.audioFile as any)) {
         newErrors.audioFile = 'Audio file is required';
       }
     }

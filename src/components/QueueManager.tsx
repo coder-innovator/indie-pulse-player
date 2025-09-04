@@ -53,7 +53,7 @@ const formatDuration = (seconds: number): string => {
 
 // Calculate total queue duration
 const calculateTotalDuration = (items: QueueItem[]): number => {
-  return items.reduce((total, item) => total + (item.duration || 0), 0);
+  return items.reduce((total, item) => total + (parseInt(item.duration || '0') || 0), 0);
 };
 
 interface QueueItemComponentProps {
@@ -148,9 +148,9 @@ const QueueItemComponent: React.FC<QueueItemComponentProps> = ({
       
       {/* Cover art */}
       <div className="relative w-10 h-10 rounded-md overflow-hidden bg-secondary flex-shrink-0">
-        {item.cover_art_url ? (
+        {item.coverUrl ? (
           <img 
-            src={item.cover_art_url} 
+            src={item.coverUrl}
             alt={item.title}
             className="w-full h-full object-cover"
           />
@@ -195,7 +195,7 @@ const QueueItemComponent: React.FC<QueueItemComponentProps> = ({
           {item.duration && (
             <>
               <span>•</span>
-              <span>{formatDuration(item.duration)}</span>
+              <span>{formatDuration(parseInt(item.duration || '0'))}</span>
             </>
           )}
         </div>

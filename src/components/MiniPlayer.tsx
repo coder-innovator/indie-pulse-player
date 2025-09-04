@@ -15,7 +15,7 @@ import {
   Heart,
   MoreHorizontal,
   ChevronUp,
-  Queue,
+  List,
   Music,
   Minimize2,
 } from 'lucide-react';
@@ -331,9 +331,9 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({ className }) => {
         <div className="flex items-center gap-3 flex-1 min-w-0">
           {/* Cover art */}
           <div className="relative w-12 h-12 rounded-md overflow-hidden bg-secondary flex-shrink-0">
-            {currentTrack.cover_art_url ? (
+            {currentTrack.coverUrl ? (
               <img 
-                src={currentTrack.cover_art_url} 
+                src={currentTrack.coverUrl}
                 alt={currentTrack.title}
                 className="w-full h-full object-cover"
               />
@@ -436,7 +436,7 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({ className }) => {
               queueVisible ? "text-primary" : "text-muted-foreground hover:text-foreground"
             )}
           >
-            <Queue className="h-4 w-4" />
+            <List className="h-4 w-4" />
           </Button>
           
           {/* Volume control */}

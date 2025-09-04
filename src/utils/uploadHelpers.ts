@@ -92,7 +92,7 @@ export const validateAudioFile = async (file: File): Promise<FileValidationResul
 
     // Check file extension
     const extension = '.' + file.name.split('.').pop()?.toLowerCase();
-    if (!UPLOAD_CONFIG.ALLOWED_AUDIO_TYPES.includes(extension)) {
+    if (!UPLOAD_CONFIG.ALLOWED_AUDIO_TYPES.includes(extension as any)) {
       return { 
         isValid: false, 
         error: `Invalid format. Only ${UPLOAD_CONFIG.ALLOWED_AUDIO_TYPES.join(', ')} files are allowed` 
@@ -100,7 +100,7 @@ export const validateAudioFile = async (file: File): Promise<FileValidationResul
     }
 
     // Check MIME type
-    if (!UPLOAD_CONFIG.ALLOWED_AUDIO_MIMES.includes(file.type)) {
+    if (!UPLOAD_CONFIG.ALLOWED_AUDIO_MIMES.includes(file.type as any)) {
       return { 
         isValid: false, 
         error: `Invalid file type. Expected audio file, got ${file.type}` 

@@ -258,7 +258,7 @@ export const EnhancedAudioPlayer: React.FC<AudioPlayerProps> = ({ className }) =
     }
     
     try {
-      const nextUrl = await getSignedUrl(nextTrack.stream_url || '');
+      const nextUrl = await getSignedUrl(nextTrack.streamUrl || '');
       if (nextUrl !== preloadedUrl) {
         nextAudioRef.current.src = nextUrl;
         nextAudioRef.current.load();
@@ -326,7 +326,7 @@ export const EnhancedAudioPlayer: React.FC<AudioPlayerProps> = ({ className }) =
     
     // Add to history
     const playDuration = currentAudioRef.current?.currentTime || 0;
-    const completed = playDuration > (currentTrack.duration || 0) * 0.8; // 80% completion threshold
+    const completed = playDuration > (parseInt(currentTrack.duration || '0') || 0) * 0.8; // 80% completion threshold
     addToHistory(currentTrack, playDuration, completed);
     
     // Save playback position
