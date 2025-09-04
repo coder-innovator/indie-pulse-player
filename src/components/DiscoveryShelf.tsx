@@ -135,7 +135,7 @@ export const DiscoveryShelf = ({
             
             {/* Track Stats */}
             <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>{track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}` : '0:00'}</span>
+              <span>{track.duration ? `${Math.floor(Number(track.duration) / 60)}:${(Number(track.duration) % 60).toString().padStart(2, '0')}` : '0:00'}</span>
               {track.uniqueListeners && (
                 <span>{track.uniqueListeners.toLocaleString()} listeners</span>
               )}

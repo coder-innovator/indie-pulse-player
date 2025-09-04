@@ -168,7 +168,7 @@ export const MagicalLoadingScreen = ({
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center z-50">
-      <MagicalBackground particleCount={20} />
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 opacity-50" />
       
       <div className="relative z-10 text-center space-y-8">
         {/* Main loader */}

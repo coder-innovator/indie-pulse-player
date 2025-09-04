@@ -26,7 +26,7 @@ export function MagicalLoadingScreen({
         <MagicalBackground />
         <div className="relative z-10 text-center space-y-8">
           <div className="space-y-6">
-            <MagicalLoader size="xl" variant="liquid" />
+            <MagicalLoader size="lg" variant="liquid" />
             <h2 className="text-3xl font-bold text-gradient fluid-text">
               {title}
             </h2>
