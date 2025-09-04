@@ -8,6 +8,10 @@ interface MagicalCardProps {
   interactive?: boolean;
   onClick?: () => void;
   disabled?: boolean;
+  onMouseMove?: (e: React.MouseEvent<HTMLDivElement>) => void;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
+  style?: React.CSSProperties;
 }
 
 export const MagicalCard = ({ 
@@ -16,7 +20,11 @@ export const MagicalCard = ({
   variant = 'default',
   interactive = true,
   onClick,
-  disabled = false
+  disabled = false,
+  style,
+  onMouseMove: externalOnMouseMove,
+  onMouseEnter: externalOnMouseEnter,
+  onMouseLeave: externalOnMouseLeave
 }: MagicalCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -37,11 +45,19 @@ export const MagicalCard = ({
         y: (y - centerY) / centerY,
       });
     }
+    
+    externalOnMouseMove?.(e);
+  };
+
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+    externalOnMouseEnter?.();
   };
 
   const handleMouseLeave = () => {
     setIsHovered(false);
     setMousePosition({ x: 0, y: 0 });
+    externalOnMouseLeave?.();
   };
 
   const getVariantClasses = () => {
@@ -89,9 +105,9 @@ export const MagicalCard = ({
         getInteractiveClasses(),
         className
       )}
-      style={getTransformStyle()}
+      style={{ ...getTransformStyle(), ...style }}
       onMouseMove={handleMouseMove}
-      onMouseEnter={() => setIsHovered(true)}
+      onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={onClick}
       tabIndex={interactive && !disabled ? 0 : undefined}
@@ -180,7 +196,7 @@ export const MagneticCard = ({ children, ...props }: MagicalCardProps) => {
   };
 
   return (
-    <MagicalCard
+    <div
       ref={cardRef}
       {...props}
       onMouseMove={handleMouseMove}
@@ -192,6 +208,6 @@ export const MagneticCard = ({ children, ...props }: MagicalCardProps) => {
       )}
     >
       {children}
-    </MagicalCard>
+    </div>
   );
 };

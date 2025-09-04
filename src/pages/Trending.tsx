@@ -199,7 +199,7 @@ export default function Trending() {
   return (
     <div className="min-h-screen page-background relative overflow-hidden">
       {/* Magical Background */}
-      <MagicalBackground particleCount={20} className="opacity-30" />
+      <MagicalBackground variant="subtle" className="opacity-30" />
       
       {/* Header */}
       <header className="enhanced-header backdrop-blur-md bg-surface-primary/80">
