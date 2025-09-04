@@ -19,6 +19,16 @@ export interface UseSearchResult {
   search: (query: string) => Promise<void>;
   searchWithFilters: (query: string, filters: SearchFilters) => Promise<void>;
   clearResults: () => void;
+  // Additional properties expected by EnhancedSearchBar
+  query: string;
+  recentSearches: string[];
+  isLoading: boolean;
+  filters: SearchFilters;
+  sortBy: SortOption;
+  updateFilters: (filters: SearchFilters) => void;
+  updateSortBy: (sortBy: SortOption) => void;
+  clearSearch: () => void;
+  clearRecentSearches: () => void;
 }
 
 export const useSearch = (): UseSearchResult => {
@@ -34,9 +44,21 @@ export const useSearch = (): UseSearchResult => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [filters, setFilters] = useState<SearchFilters>({
+    moods: [],
+    genres: [],
+    scenes: [],
+    bpmRange: [60, 180],
+    duration: '',
+    popularityTier: [],
+  });
+  const [sortBy, setSortBy] = useState<SortOption>('relevance');
   const { user } = useAuth();
 
   const search = useCallback(async (query: string) => {
+    setQuery(query);
     if (!query.trim()) {
       setResults({
         tracks: [],
@@ -85,7 +107,7 @@ export const useSearch = (): UseSearchResult => {
   }, []);
 
   const searchWithFilters = useCallback(async (query: string, filters: SearchFilters) => {
-    // Simplified implementation
+    setFilters(filters);
     await search(query);
   }, [search]);
 
@@ -100,6 +122,24 @@ export const useSearch = (): UseSearchResult => {
       query: '',
       executionTime: 0,
     });
+    setQuery('');
+  }, []);
+
+  const updateFilters = useCallback((newFilters: SearchFilters) => {
+    setFilters(newFilters);
+  }, []);
+
+  const updateSortBy = useCallback((newSortBy: SortOption) => {
+    setSortBy(newSortBy);
+  }, []);
+
+  const clearSearch = useCallback(() => {
+    setQuery('');
+    clearResults();
+  }, [clearResults]);
+
+  const clearRecentSearches = useCallback(() => {
+    setRecentSearches([]);
   }, []);
 
   return {
@@ -109,5 +149,14 @@ export const useSearch = (): UseSearchResult => {
     search,
     searchWithFilters,
     clearResults,
+    query,
+    recentSearches,
+    isLoading: loading,
+    filters,
+    sortBy,
+    updateFilters,
+    updateSortBy,
+    clearSearch,
+    clearRecentSearches,
   };
 };

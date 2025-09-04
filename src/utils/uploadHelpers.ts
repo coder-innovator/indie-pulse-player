@@ -156,7 +156,7 @@ export const generateFileHash = (file: File): Promise<string> => {
  */
 export const checkForDuplicateFile = async (hash: string, userId: string): Promise<boolean> => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('tracks')
       .select('id, title')
       .eq('file_hash', hash)
